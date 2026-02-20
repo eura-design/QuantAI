@@ -2,6 +2,7 @@ import { Header } from './components/Header'
 import { ChartPanel } from './components/ChartPanel'
 import { ReportPanel } from './components/ReportPanel'
 import { FearGreed } from './components/FearGreed'
+import { EventCalendar } from './components/EventCalendar'
 import { ChatPanel } from './components/ChatPanel'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
@@ -30,6 +31,10 @@ function App() {
 
           <ErrorBoundary>
             <FearGreed />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
+            <EventCalendar />
           </ErrorBoundary>
 
           <ErrorBoundary>

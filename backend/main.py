@@ -1,13 +1,15 @@
-import uvicorn, sqlite3, requests, asyncio
+import uvicorn, sqlite3, requests, asyncio, json
 from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
-from analyzer import get_ai_strategy
+from analyzer import get_ai_strategy, fetch_crypto_news, get_economic_events
 from contextlib import contextmanager
 
 DB_NAME = "quant_v1.db"
+clients = set()
+rate_limits = {}
 
 @contextmanager
 def get_db():
@@ -26,22 +28,19 @@ def init_db():
 class ChatMessage(BaseModel):
     sender: str; text: str; timestamp: str
 
-app = FastAPI(title="QuantAI API", version="1.3.1")
+app = FastAPI(title="QuantAI API", version="1.5.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
 def startup(): init_db()
 
-@app.get("/")
-def root(): return {"status": "ok", "service": "QuantAI"}
-
 @app.get("/api/strategy")
 def strategy():
     with get_db() as conn:
         row = conn.execute("SELECT * FROM strategy_history ORDER BY id DESC LIMIT 1").fetchone()
+        # 15분 캐시 로직
         if row and datetime.now() - datetime.strptime(row['generated_at'], "%Y-%m-%d %H:%M:%S") < timedelta(minutes=15):
             return dict(row)
-
     try:
         res = get_ai_strategy()
         if not res['strategy'].startswith("AI 분석 오류"):
@@ -49,34 +48,31 @@ def strategy():
                 conn.execute("INSERT INTO strategy_history (price, strategy, generated_at, funding_rate, open_interest) VALUES (?,?,?,?,?)",
                              (res['price'], res['strategy'], res['generated_at'], res['funding_rate'], res['open_interest']))
                 conn.commit()
-        return res if not res['strategy'].startswith("AI 분석 오류") and row else (res if not row else dict(row))
-    except: return dict(row) if row else {"price":0, "strategy":"⚠️ 대기 중", "generated_at":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "funding_rate":0, "open_interest":0}
+        return res
+    except: return dict(row) if row else {"strategy": "⚠️ 데이터 수집 중..."}
 
-@app.get("/api/fear_greed")
-def fear_greed():
-    try: return requests.get("https://api.alternative.me/fng/", timeout=5).json()["data"][0]
-    except: return {"value": "50", "value_classification": "Neutral"}
+@app.get("/api/news")
+def get_news():
+    return fetch_crypto_news()
 
-clients = set()
-
-@app.get("/api/chat/messages")
-def get_messages():
-    with get_db() as conn:
-        rows = conn.execute("SELECT sender, text, timestamp FROM messages ORDER BY id DESC LIMIT 50").fetchall()
-        return [dict(r) for r in rows][::-1]
+@app.get("/api/events")
+def get_events():
+    return get_economic_events()
 
 @app.get("/api/chat/stream")
 async def chat_stream(request: Request):
     async def event_generator():
         q = asyncio.Queue(); clients.add(q)
         try:
-            while not await request.is_disconnected():
-                try: yield {"data": await asyncio.wait_for(q.get(), 1.0)}
-                except asyncio.TimeoutError: yield {"event": "ping", "data": ""}
+            with get_db() as conn:
+                # 최근 50개 메시지 로드
+                for row in conn.execute("SELECT sender, text, timestamp FROM messages ORDER BY id ASC LIMIT 50").fetchall():
+                    yield {"data": json.dumps(dict(row))}
+            while True:
+                if await request.is_disconnected(): break
+                msg = await q.get(); yield {"data": json.dumps(msg)}
         finally: clients.remove(q)
     return EventSourceResponse(event_generator())
-
-rate_limits = {}
 
 @app.post("/api/chat/send")
 async def send_message(msg: ChatMessage, request: Request):
@@ -93,5 +89,8 @@ async def send_message(msg: ChatMessage, request: Request):
     for q in list(clients): await q.put(msg.dict())
     return {"status": "ok"}
 
+@app.get("/")
+def root(): return {"status": "ok", "service": "QuantAI"}
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
