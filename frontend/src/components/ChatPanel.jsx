@@ -10,30 +10,52 @@ const WS_URL = BASE_URL.replace('http', 'ws') + '/ws/chat'
 export function ChatPanel() {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
-    const [ws, setWs] = useState(null)
     const [myId] = useState('개미 ' + Math.floor(Math.random() * 1000))
+    const [isConnected, setIsConnected] = useState(false)
+    const wsRef = useRef(null)
     const messagesEndRef = useRef(null)
 
+    // 재연결 및 소켓 관리
     useEffect(() => {
-        const socket = new WebSocket(WS_URL)
+        let reconnectTimer
 
-        socket.onopen = () => {
-            console.log('Chat Connected')
+        function connect() {
+            if (wsRef.current?.readyState === WebSocket.OPEN) return
+
+            const socket = new WebSocket(WS_URL)
+
+            socket.onopen = () => {
+                console.log('Chat Connected')
+                setIsConnected(true)
+                if (reconnectTimer) clearTimeout(reconnectTimer)
+            }
+
+            socket.onmessage = (event) => {
+                const data = JSON.parse(event.data)
+                setMessages(prev => [...prev, data])
+            }
+
+            socket.onclose = () => {
+                console.log('Chat Disconnected')
+                setIsConnected(false)
+                wsRef.current = null
+                // 3초 후 재연결 시도
+                reconnectTimer = setTimeout(connect, 3000)
+            }
+
+            socket.onerror = (err) => {
+                console.log('Chat Error:', err)
+                socket.close()
+            }
+
+            wsRef.current = socket
         }
 
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data)
-            setMessages(prev => [...prev, data])
-        }
-
-        socket.onclose = () => {
-            console.log('Chat Disconnected')
-        }
-
-        setWs(socket)
+        connect()
 
         return () => {
-            socket.close()
+            if (wsRef.current) wsRef.current.close()
+            if (reconnectTimer) clearTimeout(reconnectTimer)
         }
     }, [])
 
@@ -43,7 +65,7 @@ export function ChatPanel() {
 
     const sendMessage = (e) => {
         e.preventDefault()
-        if (!input.trim() || !ws) return
+        if (!input.trim() || !isConnected || !wsRef.current) return
 
         const msg = {
             sender: myId,
@@ -51,15 +73,21 @@ export function ChatPanel() {
             timestamp: new Date().toLocaleTimeString().slice(0, 5)
         }
 
-        ws.send(JSON.stringify(msg))
-        setInput('')
+        try {
+            wsRef.current.send(JSON.stringify(msg))
+            setInput('')
+        } catch (err) {
+            console.error("Send failed:", err)
+        }
     }
 
     return (
         <div className={styles.panel}>
             <div className={styles.header}>
                 🔥 실시간 토론방
-                <span className={styles.onlineBadge}>LIVE</span>
+                <span className={styles.onlineBadge} style={{ background: isConnected ? '#ef5350' : '#64748b' }}>
+                    {isConnected ? 'LIVE' : '연결 중...'}
+                </span>
             </div>
 
             <div className={styles.messages}>

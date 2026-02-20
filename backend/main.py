@@ -42,9 +42,14 @@ class ConnectionManager:
         if len(self.chat_history) > 50:
             self.chat_history.pop(0)
             
-        # 모두에게 전송
-        for connection in self.active_connections:
-            await connection.send_json(message)
+        # 모두에게 전송 (끊긴 연결은 제거)
+        # 리스트를 순회하면서 삭제할 수 있으므로 복사본([:]) 사용
+        for connection in self.active_connections[:]:
+            try:
+                await connection.send_json(message)
+            except Exception:
+                # 전송 실패 시 (연결 끊김 등) 명단에서 조용히 제거
+                self.disconnect(connection)
 
 manager = ConnectionManager()
 
