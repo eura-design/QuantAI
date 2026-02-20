@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from analyzer import get_ai_strategy, fetch_crypto_news, get_economic_events
 from contextlib import contextmanager
 
-DB_NAME = "quant_v1.db"
+DB_NAME = "quant_v2.db"
 clients = set()
 rate_limits = {}
 

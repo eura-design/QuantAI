@@ -12,31 +12,29 @@ export function ChatPanel() {
 
     // SSE 실시간 연결 (서버 부하 감소, 반응 속도 향상)
     useEffect(() => {
-        // 1. 초기 데이터 로딩 (최근 50개)
-        fetch(API.CHAT_MESSAGES)
-            .then(res => res.json())
-            .then(data => setMessages(data))
-            .catch(err => console.error("Initial Load Error:", err))
-
-        // 2. 실시간 스트림 연결
+        // 실시간 스트림 연결 (개선된 백엔드는 첫 연결 시 최근 메시지 50개를 함께 보냄)
         const eventSource = new EventSource(API.CHAT_STREAM)
 
         eventSource.onmessage = (e) => {
             try {
                 const newMsg = JSON.parse(e.data)
-                setMessages(prev => [...prev.slice(-49), newMsg]) // 최신 50개 유지
+                setMessages(prev => {
+                    // 중복 방지 로직 (ID가 있다면 더 좋겠지만, 여기선 텍스트와 시간으로 간단히 체크)
+                    const isDuplicate = prev.some(m => m.text === newMsg.text && m.timestamp === newMsg.timestamp && m.sender === newMsg.sender)
+                    if (isDuplicate) return prev
+                    return [...prev.slice(-49), newMsg]
+                })
             } catch (err) {
-                // ping 메시지 등은 무시
+                console.error("Parse Error:", err)
             }
         }
 
         eventSource.onerror = (e) => {
-            eventSource.close() // 에러 시 닫고 재연결 시도 (React가 리렌더링하며 재연결됨)
-        }
-
-        return () => {
+            console.error("SSE Connection Error:", e)
             eventSource.close()
         }
+
+        return () => eventSource.close()
     }, [])
 
     useEffect(() => {
