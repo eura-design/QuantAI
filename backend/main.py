@@ -198,42 +198,48 @@ from fastapi import Request
 
 @app.post("/api/chat/send")
 async def send_message(msg: ChatMessage, request: Request):
-    client_ip = request.client.host
-    now = datetime.now().timestamp()
-    
-    # 0. Rate Limit 체크
-    if client_ip not in rate_limits:
-        rate_limits[client_ip] = {"tokens": 5, "last_update": now}
-    
-    user_limit = rate_limits[client_ip]
-    
-    # 토큰 충전 (10초에 1개)
-    elapsed = now - user_limit["last_update"]
-    new_tokens = int(elapsed / 10)
-    if new_tokens > 0:
-        user_limit["tokens"] = min(5, user_limit["tokens"] + new_tokens)
-        user_limit["last_update"] = now
+    try:
+        client_ip = request.client.host
+        now = datetime.now().timestamp()
         
-    # 토큰 차감
-    if user_limit["tokens"] > 0:
-        user_limit["tokens"] -= 1
-    else:
-        raise HTTPException(status_code=429, detail="Too many messages. Please wait.")
+        # 0. Rate Limit 체크
+        if client_ip not in rate_limits:
+            rate_limits[client_ip] = {"tokens": 5, "last_update": now}
+        
+        user_limit = rate_limits[client_ip]
+        
+        # 토큰 충전 (10초에 1개)
+        elapsed = now - user_limit["last_update"]
+        new_tokens = int(elapsed / 10)
+        if new_tokens > 0:
+            user_limit["tokens"] = min(5, user_limit["tokens"] + new_tokens)
+            user_limit["last_update"] = now
+            
+        # 토큰 차감
+        if user_limit["tokens"] > 0:
+            user_limit["tokens"] -= 1
+        else:
+            raise HTTPException(status_code=429, detail="Too many messages. Please wait.")
 
-    # 1. DB 저장
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute("INSERT INTO messages (sender, text, timestamp) VALUES (?, ?, ?)",
-              (msg.sender, msg.text, msg.timestamp))
-    conn.commit()
-    conn.close()
-    
-    # 2. 실시간 전파 (모든 클라이언트에게)
-    msg_dict = msg.dict()
-    for q in list(clients):
-        await q.put(msg_dict)
+        # 1. DB 저장
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute("INSERT INTO messages (sender, text, timestamp) VALUES (?, ?, ?)",
+                  (msg.sender, msg.text, msg.timestamp))
+        conn.commit()
+        conn.close()
         
-    return {"status": "ok"}
+        # 2. 실시간 전파 (모든 클라이언트에게)
+        msg_dict = msg.dict()
+        for q in list(clients):
+            await q.put(msg_dict)
+            
+        return {"status": "ok"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Error] Talk failed: {e}")
+        return {"status": "error", "message": str(e)}
 
 
 if __name__ == "__main__":

@@ -53,16 +53,21 @@ export function ChatPanel() {
             timestamp: new Date().toLocaleTimeString().slice(0, 5)
         }
 
+        // [낙관적 업데이트] 서버 응답 기다리지 않고 즉시 화면에 표시
+        setMessages(prev => [...prev.slice(-49), msg])
+        setInput('')
+
         try {
             await fetch(SEND_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(msg)
             })
-            setInput('')
-            // SSE가 자동으로 업데이트하므로 수동 fetch 불필요
+            // 전송 성공! (이미 화면에 표시했으므로 추가 작업 없음)
         } catch (err) {
             console.error("Send failed:", err)
+            // 전송 실패 시 에러 표시 혹은 롤백 (여기선 생략)
+            alert("메시지 전송 실패. 네트워크를 확인하세요.")
         }
     }
 
