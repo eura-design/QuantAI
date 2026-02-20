@@ -1,0 +1,22 @@
+/* 오른쪽 사이드바 컨테이너 */
+.right-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 25%;
+    min-width: 320px;
+    max-width: 480px;
+    border-left: 1px solid #1e2d45;
+    background: #0d1117;
+    overflow: hidden;
+}
+
+/* 기존 ReportPanel 스타일 덮어쓰기 (너비 제한 해제) */
+.right-sidebar>div {
+    width: 100% !important;
+    max-width: none !important;
+    border-right: none !important;
+    border-left: none !important;
+}
+
+/* 높이 배분: 리포트(자동), 공포지수(자동), 채팅(나머지 꽉 채우기) */
+/* ChatPanel은 이미 flex: 1 설정되어 있음 */

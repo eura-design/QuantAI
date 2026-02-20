@@ -1,13 +1,15 @@
 import uvicorn
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer import get_ai_strategy
+from typing import List
+import requests
 
 app = FastAPI(
     title="QuantAI API",
-    description="BTC/USDT 실시간 AI 분석 백엔드",
-    version="1.0.0",
+    description="BTC/USDT 실시간 AI 분석 백엔드 & 채팅",
+    version="1.1.0"
 )
 
 app.add_middleware(
@@ -17,6 +19,39 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# --- [ 채팅 관리자 (DB 없이 메모리로 관리) ] ---
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+        self.chat_history: List[dict] = []  # 최근 대화 50개 저장
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+        # 접속 시 최근 대화 내용 전송
+        for msg in self.chat_history:
+            await websocket.send_json(msg)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        # 대화 저장 (최대 50개)
+        self.chat_history.append(message)
+        if len(self.chat_history) > 50:
+            self.chat_history.pop(0)
+            
+        # 모두에게 전송
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+manager = ConnectionManager()
+
+
+@app.get("/")
+def read_root():
+    return {"status": "ok", "service": "QuantAI Backend"}
 
 
 @app.get("/api/health")

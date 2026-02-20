@@ -1,0 +1,150 @@
+.panel {
+    display: flex;
+    flex-direction: column;
+    background: #0d1117;
+    border-top: 1px solid #1e2d45;
+    flex: 1;
+    /* 남은 공간 모두 차지 */
+    min-height: 0;
+    overflow: hidden;
+}
+
+.header {
+    padding: 10px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    border-bottom: 1px solid #1e2d45;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.onlineBadge {
+    background: #ef5350;
+    color: white;
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    border-radius: 4px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: #1e2d45 transparent;
+}
+
+.messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+    background: #1e2d45;
+}
+
+.messageRow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 90%;
+}
+
+.myMessage {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.sender {
+    font-size: 0.65rem;
+    color: #64748b;
+    margin-bottom: 2px;
+    margin-left: 2px;
+}
+
+.myMessage .sender {
+    margin-right: 2px;
+    color: #4facfe;
+}
+
+.bubble {
+    background: #1e2d45;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border-top-left-radius: 0;
+    font-size: 0.8rem;
+    color: #cbd5e1;
+    position: relative;
+    word-break: break-word;
+}
+
+.myMessage .bubble {
+    background: #2563eb;
+    color: white;
+    border-radius: 8px;
+    border-top-right-radius: 0;
+}
+
+.time {
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-left: 6px;
+    float: right;
+    margin-top: 4px;
+}
+
+.inputForm {
+    padding: 10px;
+    border-top: 1px solid #1e2d45;
+    display: flex;
+    gap: 6px;
+}
+
+.input {
+    flex: 1;
+    background: #0a0e1a;
+    border: 1px solid #1e2d45;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    outline: none;
+}
+
+.input:focus {
+    border-color: #4facfe;
+}
+
+.sendBtn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 0 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.sendBtn:hover {
+    background: #1d4ed8;
+}

@@ -1,0 +1,57 @@
+.widget {
+    background: #0d1117;
+    border-top: 1px solid #1e2d45;
+    padding: 14px 16px;
+    border-bottom: 1px solid #1e2d45;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.score {
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.gaugeContainer {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.label {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.barBg {
+    height: 8px;
+    background: #1e2d45;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 6px;
+}
+
+.barFill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s ease-out;
+}
+
+.scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: #475569;
+}
