@@ -204,10 +204,17 @@ export function ChartPanel() {
 
         function updateEma() {
             const data = candlesRef.current
-            const e20 = calcEMA(data, 20).slice(-60)
-            const e50 = calcEMA(data, 50).slice(-60)
-            e20.forEach(p => ema20Ref.current?.update(p))
-            e50.forEach(p => ema50Ref.current?.update(p))
+            if (data.length === 0) return
+
+            // 전체 다시 계산 (과거 데이터 변경 가능성 대비)
+            const e20 = calcEMA(data, 20)
+            const e50 = calcEMA(data, 50)
+
+            // 데이터가 많으면 setData로 전체 덮어쓰기 (가장 확실함)
+            // 깜빡임 방지를 위해 마지막 1개만 update할 수도 있지만,
+            // EMA는 과거 데이터 영향으로 값이 변할 수 있어 setData가 안전
+            ema20Ref.current?.setData(e20)
+            ema50Ref.current?.setData(e50)
         }
 
         function connectWs() {

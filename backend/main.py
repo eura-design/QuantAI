@@ -1,4 +1,5 @@
 import uvicorn
+from datetime import datetime, timedelta
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer import get_ai_strategy
@@ -24,22 +25,45 @@ async def health():
     return {"status": "ok"}
 
 
+# 15분 캐싱을 위한 전역 변수
+cache = {
+    "data": None,
+    "timestamp": None
+}
+CACHE_DURATION_MINUTES = 15
+
 @app.get("/api/strategy")
 async def strategy():
     """
     Gemini AI + 바이낸스 데이터를 기반으로 BTC 매매 전략을 반환합니다.
-    응답 형식:
-      price         (float)  : 분석 기준 현재가
-      strategy      (str)    : AI 생성 전략 텍스트
-      generated_at  (str)    : 생성 시각 (YYYY-MM-DD HH:MM:SS)
-      funding_rate  (float)  : 펀딩비(%)
-      open_interest (float)  : 미결제약정
+    (15분 캐싱 적용으로 API 호출 제한 방지)
     """
+    global cache
+    now = datetime.now()
+
+    # 1. 캐시가 유효하면 (15분 이내) 저장된 데이터 반환
+    if cache["data"] and cache["timestamp"]:
+        if now - cache["timestamp"] < timedelta(minutes=CACHE_DURATION_MINUTES):
+            return cache["data"]
+
     try:
+        # 2. 새로운 데이터 요청
         result = get_ai_strategy()
+        
+        # 성공 시 캐시 업데이트
+        cache["data"] = result
+        cache["timestamp"] = now
+        
         return result
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # 3. 에러 발생 시 (API 한도 초과 등), 기존 캐시가 있다면 그거라도 반환
+        if cache["data"]:
+            return cache["data"]
+        
+        # 캐시도 없으면 에러 출력
+        print(f"Error fetching strategy: {e}")
+        # 사용자에게는 친절한 에러 메시지 (또는 빈 값)
+        raise HTTPException(status_code=500, detail="AI 분석 서버가 잠시 바쁩니다. 잠시 후 다시 시도해주세요.")
 
 
 if __name__ == "__main__":
