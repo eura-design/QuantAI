@@ -48,7 +48,7 @@ export function ChatPanel() {
         const msg = {
             sender: myId,
             text: input.trim(),
-            timestamp: new Date().toLocaleTimeString().slice(0, 5)
+            timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
         }
 
         // [낙관적 업데이트] 서버 응답 기다리지 않고 즉시 화면에 표시
