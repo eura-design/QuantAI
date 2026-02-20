@@ -56,14 +56,22 @@ async def strategy():
         
         return result
     except Exception as e:
-        # 3. 에러 발생 시 (API 한도 초과 등), 기존 캐시가 있다면 그거라도 반환
+        # 3. 에러 발생 시 (API 한도 초과 등)
+        print(f"Error fetching strategy: {e}")
+
+        # A. 기존 캐시가 있다면 그거라도 반환
         if cache["data"]:
             return cache["data"]
         
-        # 캐시도 없으면 에러 출력
-        print(f"Error fetching strategy: {e}")
-        # 사용자에게는 친절한 에러 메시지 (또는 빈 값)
-        raise HTTPException(status_code=500, detail="AI 분석 서버가 잠시 바쁩니다. 잠시 후 다시 시도해주세요.")
+        # B. 캐시도 없다면? (서버 재시작 직후 등) -> '분석 대기 중' 가짜 데이터 반환
+        # 이렇게 하면 사용자는 절대 에러를 보지 않음
+        return {
+            "price": 0,
+            "strategy": "⚠️ AI 요청량이 많아 잠시 대기 중입니다. (잠시 후 다시 시도됩니다)",
+            "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "funding_rate": 0,
+            "open_interest": 0
+        }
 
 
 if __name__ == "__main__":

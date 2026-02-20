@@ -227,25 +227,25 @@ export function ChartPanel() {
             }
 
             wsRef.current.onmessage = (event) => {
-                const msg = JSON.parse(event.data)
-                const k = msg.k
-                const t = toSec(k.t)
-                const open = parseFloat(k.o)
-                const high = parseFloat(k.h)
-                const low = parseFloat(k.l)
-                const close = parseFloat(k.c)
-                const vol = parseFloat(k.v)
-
-                const candles = candlesRef.current
-                // 안전장치: 캔들 데이터가 없거나, 새 데이터가 과거 데이터면 무시
-                if (candles.length > 0) {
-                    const lastTime = candles[candles.length - 1].time
-                    if (t < lastTime) return
-                }
-
-                const newCandle = { time: t, open, high, low, close }
-
                 try {
+                    const msg = JSON.parse(event.data)
+                    const k = msg.k
+                    const t = toSec(k.t)
+                    const open = parseFloat(k.o)
+                    const high = parseFloat(k.h)
+                    const low = parseFloat(k.l)
+                    const close = parseFloat(k.c)
+                    const vol = parseFloat(k.v)
+
+                    const candles = candlesRef.current
+                    // 안전장치: 캔들 데이터가 없거나, 새 데이터가 과거 데이터면 무시
+                    if (candles.length > 0) {
+                        const lastTime = candles[candles.length - 1].time
+                        if (t < lastTime) return
+                    }
+
+                    const newCandle = { time: t, open, high, low, close }
+
                     // 현재 봉 업데이트 vs 새 봉 추가
                     if (candles.length > 0 && candles[candles.length - 1].time === t) {
                         candles[candles.length - 1] = newCandle
@@ -263,15 +263,14 @@ export function ChartPanel() {
                         })
                         if (candles.length > 600) candles.shift()
                     }
-                } catch (err) {
-                    // 순서 꼬임 등 차트 에러 무시
-                    // console.warn(err) 
-                }
 
-                updateEma()
-                updatePriceDisplay(close, open)
-                setOhlcv({ o: formatPrice(open), h: formatPrice(high), l: formatPrice(low), c: formatPrice(close), v: formatVol(vol) })
-                setLastUpdate(new Date().toTimeString().slice(0, 8))
+                    updateEma()
+                    updatePriceDisplay(close, open)
+                    setOhlcv({ o: formatPrice(open), h: formatPrice(high), l: formatPrice(low), c: formatPrice(close), v: formatVol(vol) })
+                    setLastUpdate(new Date().toTimeString().slice(0, 8))
+                } catch (err) {
+                    // console.warn('Chart update ignored:', err)
+                }
             }
 
             wsRef.current.onerror = () => { }
