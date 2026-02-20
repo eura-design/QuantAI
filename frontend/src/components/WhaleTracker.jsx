@@ -51,8 +51,8 @@ export function WhaleTracker() {
                                 <span>{a.text}</span>
                                 <span className={styles.time}>{a.timestamp}</span>
                             </div>
-                        ) : (
-                            <div key={a.id || i} className={`${styles.item} ${styles[a.side.toLowerCase()]}`}>
+                        ) : a.side ? (
+                            <div key={a.id || i} className={`${styles.item} ${styles[a.side.toLowerCase()] || ''}`}>
                                 <span className={styles.icon}>{getIcon(a.amount)}</span>
                                 <div className={styles.info}>
                                     <div className={styles.mainInfo}>
@@ -60,13 +60,13 @@ export function WhaleTracker() {
                                         <span className={styles.amount}>${formatAmount(a.amount)}</span>
                                     </div>
                                     <div className={styles.subInfo}>
-                                        <span>{a.qty.toFixed(3)} BTC</span>
-                                        <span>@{a.price.toLocaleString()}</span>
+                                        <span>{a.qty?.toFixed(3)} BTC</span>
+                                        <span>@{a.price?.toLocaleString()}</span>
                                     </div>
                                 </div>
                                 <span className={styles.time}>{a.timestamp}</span>
                             </div>
-                        )
+                        ) : null
                     ))
                 )}
             </div>
