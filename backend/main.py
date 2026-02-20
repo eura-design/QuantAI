@@ -10,7 +10,6 @@ from contextlib import contextmanager
 DB_NAME = "quant_v2.db"
 clients = set()
 whale_clients = set()
-processed_whale_ids = set() # 중복 전송 방지
 rate_limits = {}
 
 @contextmanager
@@ -30,7 +29,7 @@ def init_db():
 class ChatMessage(BaseModel):
     sender: str; text: str; timestamp: str
 
-app = FastAPI(title="QuantAI API", version="1.5.0")
+app = FastAPI(title="QuantAI API", version="1.5.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
@@ -39,44 +38,36 @@ def startup():
     asyncio.create_task(watch_whale_trades())
 
 async def watch_whale_trades():
-    """바이낸스에서 대형 체결(고래) 실시간 감시"""
-    global processed_whale_ids
+    """바이낸스 대형 체결 실시간 감시 (안정화 버전)"""
+    last_id = 0
     while True:
         try:
-            # 최근 100개의 체결 데이터 확인
-            res = requests.get("https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=100", timeout=5).json()
-            new_alerts = []
-            for t in res:
+            res = requests.get("https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=50", timeout=5).json()
+            if not isinstance(res, list): 
+                await asyncio.sleep(5)
+                continue
+                
+            for t in reversed(res):
                 t_id = t['id']
-                if t_id in processed_whale_ids: continue
+                if last_id == 0: 
+                    last_id = t_id
+                    break
+                if t_id <= last_id: continue
                 
-                qty = float(t['qty'])
-                price = float(t['price'])
-                amount = qty * price
-                
-                # $50,000 이상 체결 시 고래로 포착
+                amount = float(t['qty']) * float(t['price'])
                 if amount >= 50000:
-                    whale_data = {
+                    alert = {
+                        "type": "trade",
                         "id": t_id,
-                        "price": price,
-                        "qty": qty,
+                        "price": float(t['price']),
+                        "qty": float(t['qty']),
                         "amount": amount,
                         "side": "BUY" if not t['isBuyerMaker'] else "SELL",
-                        "timestamp": datetime.fromtimestamp(t['time']/1000).strftime('%H:%M:%S'),
-                        "is_test": False
+                        "timestamp": datetime.fromtimestamp(t['time']/1000).strftime('%H:%M:%S')
                     }
-                    new_alerts.append(whale_data)
-                processed_whale_ids.add(t_id)
-            
-            # 너무 오래된 ID는 메모리 관리를 위해 삭제 (최근 1000개 유지)
-            if len(processed_whale_ids) > 1000:
-                processed_whale_ids = set(list(processed_whale_ids)[-500:])
-
-            # 새 알림이 있으면 모든 클라이언트에게 전송
-            for alert in reversed(new_alerts): # 최신순 전송
-                for q in list(whale_clients): await q.put(alert)
-                
-            await asyncio.sleep(2) # 2초마다 갱신
+                    for q in list(whale_clients): await q.put(alert)
+                last_id = max(last_id, t_id)
+            await asyncio.sleep(2)
         except Exception as e:
             print(f"Whale Watcher Error: {e}")
             await asyncio.sleep(5)
@@ -85,7 +76,6 @@ async def watch_whale_trades():
 def strategy():
     with get_db() as conn:
         row = conn.execute("SELECT * FROM strategy_history ORDER BY id DESC LIMIT 1").fetchone()
-        # 15분 캐시 로직
         if row and datetime.now() - datetime.strptime(row['generated_at'], "%Y-%m-%d %H:%M:%S") < timedelta(minutes=15):
             return dict(row)
     try:
@@ -119,7 +109,6 @@ async def chat_stream(request: Request):
         q = asyncio.Queue(); clients.add(q)
         try:
             with get_db() as conn:
-                # 최근 50개 메시지 로드
                 for row in conn.execute("SELECT sender, text, timestamp FROM messages ORDER BY id ASC LIMIT 50").fetchall():
                     yield {"data": json.dumps(dict(row))}
             while True:
@@ -133,11 +122,10 @@ async def whale_stream(request: Request):
     async def event_generator():
         q = asyncio.Queue(); whale_clients.add(q)
         try:
-            # 접속 시 "연결됨" 확인용 메시지 발송
             yield {"data": json.dumps({
-                "id": "system", "price": 0, "qty": 0, "amount": 0, 
-                "side": "SYSTEM", "timestamp": datetime.now().strftime('%H:%M:%S'),
-                "text": "🐋 고래 추적 시스템이 연결되었습니다."
+                "type": "system",
+                "text": "🐋 실시간 고래 추적 시스템 연결됨 ($50K+)",
+                "timestamp": datetime.now().strftime('%H:%M:%S')
             })}
             while True:
                 if await request.is_disconnected(): break
@@ -161,7 +149,7 @@ async def send_message(msg: ChatMessage, request: Request):
     return {"status": "ok"}
 
 @app.get("/")
-def root(): return {"status": "ok", "service": "QuantAI"}
+def root(): return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

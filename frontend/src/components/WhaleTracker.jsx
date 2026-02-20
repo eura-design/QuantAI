@@ -46,20 +46,27 @@ export function WhaleTracker() {
                     <div className={styles.empty}>대형 체결을 감시 중입니다...</div>
                 ) : (
                     alerts.map((a, i) => (
-                        <div key={a.id || i} className={`${styles.item} ${styles[a.side.toLowerCase()]}`}>
-                            <span className={styles.icon}>{getIcon(a.amount)}</span>
-                            <div className={styles.info}>
-                                <div className={styles.mainInfo}>
-                                    <span className={styles.side}>{a.side === 'BUY' ? '매수' : '매도'}</span>
-                                    <span className={styles.amount}>${formatAmount(a.amount)}</span>
-                                </div>
-                                <div className={styles.subInfo}>
-                                    <span>{a.qty.toFixed(3)} BTC</span>
-                                    <span>@{a.price.toLocaleString()}</span>
-                                </div>
+                        a.type === 'system' ? (
+                            <div key={i} className={styles.systemMessage}>
+                                <span>{a.text}</span>
+                                <span className={styles.time}>{a.timestamp}</span>
                             </div>
-                            <span className={styles.time}>{a.timestamp}</span>
-                        </div>
+                        ) : (
+                            <div key={a.id || i} className={`${styles.item} ${styles[a.side.toLowerCase()]}`}>
+                                <span className={styles.icon}>{getIcon(a.amount)}</span>
+                                <div className={styles.info}>
+                                    <div className={styles.mainInfo}>
+                                        <span className={styles.side}>{a.side === 'BUY' ? '매수' : '매도'}</span>
+                                        <span className={styles.amount}>${formatAmount(a.amount)}</span>
+                                    </div>
+                                    <div className={styles.subInfo}>
+                                        <span>{a.qty.toFixed(3)} BTC</span>
+                                        <span>@{a.price.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                                <span className={styles.time}>{a.timestamp}</span>
+                            </div>
+                        )
                     ))
                 )}
             </div>

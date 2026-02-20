@@ -136,3 +136,16 @@
 .sell {
     background: rgba(239, 83, 80, 0.03);
 }
+
+.systemMessage {
+    padding: 12px 15px;
+    background: rgba(30, 45, 69, 0.4);
+    border-bottom: 1px solid #1e2d45;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-style: italic;
+    border-left: 3px solid #64748b;
+}
