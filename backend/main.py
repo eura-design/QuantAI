@@ -229,9 +229,9 @@ async def send_message(msg: ChatMessage, request: Request):
     conn.close()
     
     # 2. 실시간 전파 (모든 클라이언트에게)
-    msg_json = msg.json()
+    msg_dict = msg.dict()
     for q in list(clients):
-        await q.put(msg_json)
+        await q.put(msg_dict)
         
     return {"status": "ok"}
 
