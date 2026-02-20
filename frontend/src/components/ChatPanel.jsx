@@ -100,9 +100,9 @@ export function ChatPanel() {
                 ))}
 
                 {!isConnected && (
-                    <div style={{ fontSize: '0.6rem', color: '#ef5350', padding: '10px', textAlign: 'center', background: 'rgba(239,83,80,0.1)', borderRadius: '4px', margin: '10px 0' }}>
-                        <div>상태: {lastError || '연결 시도 중...'}</div>
-                        <div style={{ marginTop: '4px', opacity: 0.7 }}>Target: {WS_URL}</div>
+                    <div style={{ fontSize: '0.7rem', color: '#ef5350', padding: '8px', textAlign: 'center', background: '#2d1b1b', borderRadius: '4px', margin: '10px 0', border: '1px solid #ef5350' }}>
+                        <div>⚠️ 연결 실패 (재시도 중...)</div>
+                        <div style={{ wordBreak: 'break-all', marginTop: '4px', opacity: 0.8 }}>Target: {WS_URL}</div>
                     </div>
                 )}
 
