@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+requests
+pydantic
+python-dotenv
+google-generativeai
+ccxt
+pandas
+pandas_ta
+sse-starlette
