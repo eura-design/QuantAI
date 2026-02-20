@@ -1,4 +1,6 @@
 .panel {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     background: #0d1117;
