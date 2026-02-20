@@ -48,18 +48,18 @@ async def watch_whale_trades():
                 price = float(t['price'])
                 amount = qty * price
                 
-                # $150,000 (약 2억 원) 이상만 고래로 간주
-                if amount >= 150000:
+                # $50,000 (약 7천만 원) 이상만 고래(또는 상어)로 간주해 더 자주 노출
+                if amount >= 50000:
                     whale_data = {
                         "id": t['id'],
                         "price": price,
                         "qty": qty,
                         "amount": amount,
-                        "side": "BUY" if not t['isBuyerMaker'] else "SELL", # isBuyerMaker=True 이면 매도
+                        "side": "BUY" if not t['isBuyerMaker'] else "SELL",
                         "timestamp": datetime.fromtimestamp(t['time']/1000).strftime('%H:%M:%S')
                     }
                     for q in list(whale_clients): await q.put(whale_data)
-            await asyncio.sleep(10) # 10초마다 확인
+            await asyncio.sleep(3) # 3초마다 확인
         except Exception as e:
             print(f"Whale Watcher Error: {e}")
             await asyncio.sleep(10)
