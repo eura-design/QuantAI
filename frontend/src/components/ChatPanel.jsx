@@ -1,69 +1,47 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './ChatPanel.module.css'
 
-// 하드코딩 (무조건 배포 주소 사용)
-const WS_URL = 'wss://quantai-production.up.railway.app/ws/chat'
+const BASE_URL = import.meta.env.VITE_API_URL
+    ? import.meta.env.VITE_API_URL.split('/api')[0]
+    : 'http://localhost:8001'
+
+// HTTP Polling 방식
+const MSG_URL = `${BASE_URL}/api/chat/messages`
+const SEND_URL = `${BASE_URL}/api/chat/send`
 
 export function ChatPanel() {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [myId] = useState('개미 ' + Math.floor(Math.random() * 1000))
-    const [isConnected, setIsConnected] = useState(false)
-    const [lastError, setLastError] = useState(null)
-    const wsRef = useRef(null)
     const messagesEndRef = useRef(null)
 
-    // 재연결 및 소켓 관리
+    // 1초마다 메시지 가져오기 (Polling)
     useEffect(() => {
-        let reconnectTimer
-
-        function connect() {
-            if (wsRef.current?.readyState === WebSocket.OPEN) return
-
-            const socket = new WebSocket(WS_URL)
-
-            socket.onopen = () => {
-                console.log('Chat Connected')
-                setIsConnected(true)
-                if (reconnectTimer) clearTimeout(reconnectTimer)
-            }
-
-            socket.onmessage = (event) => {
-                const data = JSON.parse(event.data)
-                setMessages(prev => [...prev, data])
-            }
-
-            socket.onclose = () => {
-                console.log('Chat Disconnected')
-                setIsConnected(false)
-                wsRef.current = null
-                // 3초 후 재연결 시도
-                reconnectTimer = setTimeout(connect, 3000)
-            }
-
-            socket.onerror = (err) => {
-                console.log('Chat Error:', err)
-                socket.close()
-            }
-
-            wsRef.current = socket
+        const fetchMessages = () => {
+            fetch(MSG_URL)
+                .then(r => r.json())
+                .then(data => {
+                    // 데이터가 배열인지 확인
+                    if (Array.isArray(data)) {
+                        setMessages(data)
+                    }
+                })
+                .catch(e => console.error("Chat polling error:", e))
         }
 
-        connect()
+        fetchMessages() // 즉시 실행
+        const timer = setInterval(fetchMessages, 1000) // 1초 반복
 
-        return () => {
-            if (wsRef.current) wsRef.current.close()
-            if (reconnectTimer) clearTimeout(reconnectTimer)
-        }
+        return () => clearInterval(timer)
     }, [])
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages])
 
-    const sendMessage = (e) => {
+    const sendMessage = async (e) => {
         e.preventDefault()
-        if (!input.trim() || !isConnected || !wsRef.current) return
+        if (!input.trim()) return
 
         const msg = {
             sender: myId,
@@ -72,8 +50,16 @@ export function ChatPanel() {
         }
 
         try {
-            wsRef.current.send(JSON.stringify(msg))
+            await fetch(SEND_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(msg)
+            })
             setInput('')
+            // 전송 직후 바로 리스트 갱신
+            const r = await fetch(MSG_URL)
+            const data = await r.json()
+            if (Array.isArray(data)) setMessages(data)
         } catch (err) {
             console.error("Send failed:", err)
         }
@@ -83,9 +69,7 @@ export function ChatPanel() {
         <div className={styles.panel}>
             <div className={styles.header}>
                 🔥 실시간 토론방
-                <span className={styles.onlineBadge} style={{ background: isConnected ? '#ef5350' : '#64748b' }}>
-                    {isConnected ? 'LIVE' : '연결 중...'}
-                </span>
+                <span className={styles.onlineBadge}>LIVE</span>
             </div>
 
             <div className={styles.messages}>
@@ -98,14 +82,6 @@ export function ChatPanel() {
                         </div>
                     </div>
                 ))}
-
-                {!isConnected && (
-                    <div style={{ fontSize: '0.7rem', color: '#ef5350', padding: '8px', textAlign: 'center', background: '#2d1b1b', borderRadius: '4px', margin: '10px 0', border: '1px solid #ef5350' }}>
-                        <div>⚠️ 연결 실패 (재시도 중...)</div>
-                        <div style={{ wordBreak: 'break-all', marginTop: '4px', opacity: 0.8 }}>Target: {WS_URL}</div>
-                    </div>
-                )}
-
                 <div ref={messagesEndRef} />
             </div>
 

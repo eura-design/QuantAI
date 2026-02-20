@@ -20,38 +20,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- [ 채팅 관리자 (DB 없이 메모리로 관리) ] ---
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-        self.chat_history: List[dict] = []  # 최근 대화 50개 저장
+from pydantic import BaseModel
 
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-        # 접속 시 최근 대화 내용 전송
-        for msg in self.chat_history:
-            await websocket.send_json(msg)
+# --- [ 채팅 데이터 관리 (메모리) ] ---
+chat_history = []  # [{sender, text, timestamp}, ...]
 
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def broadcast(self, message: dict):
-        # 대화 저장 (최대 50개)
-        self.chat_history.append(message)
-        if len(self.chat_history) > 50:
-            self.chat_history.pop(0)
-            
-        # 모두에게 전송 (끊긴 연결은 제거)
-        # 리스트를 순회하면서 삭제할 수 있으므로 복사본([:]) 사용
-        for connection in self.active_connections[:]:
-            try:
-                await connection.send_json(message)
-            except Exception:
-                # 전송 실패 시 (연결 끊김 등) 명단에서 조용히 제거
-                self.disconnect(connection)
-
-manager = ConnectionManager()
+class ChatMessage(BaseModel):
+    sender: str
+    text: str
+    timestamp: str
 
 
 @app.get("/")
@@ -112,6 +89,32 @@ async def strategy():
             "funding_rate": 0,
             "open_interest": 0
         }
+
+
+# --- [ 공포/탐욕 지수 API ] ---
+@app.get("/api/fear_greed")
+def get_fear_greed():
+    try:
+        # 무료 API 호출 (Alternative.me)
+        url = "https://api.alternative.me/fng/"
+        response = requests.get(url, timeout=5)
+        data = response.json()
+        return data["data"][0] 
+    except Exception as e:
+        print(f"Fear/Greed Error: {e}")
+        return {"value": "50", "value_classification": "Neutral"}
+
+# --- [ 채팅 API (HTTP Polling) ] ---
+@app.get("/api/chat/messages")
+def get_messages():
+    return chat_history
+
+@app.post("/api/chat/send")
+def send_message(msg: ChatMessage):
+    chat_history.append(msg.dict())
+    if len(chat_history) > 50:
+        chat_history.pop(0)
+    return {"status": "ok"}
 
 
 if __name__ == "__main__":
