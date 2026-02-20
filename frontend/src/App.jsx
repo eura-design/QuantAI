@@ -9,59 +9,72 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
 import './App.css'
 
-/**
- * WhaleWatcher - App.jsx 내부 삽입 버전 (에러 원천 차단)
- */
-function WhaleWatcher() {
-  const [alerts, setAlerts] = useState([]);
+// 🐋 새로운 이름과 극단적으로 단순한 구조 (에러 방지용)
+function BigWhaleMonitor() {
+  const [msgs, setMsgs] = useState([]);
   const [status, setStatus] = useState('Wait');
 
   useEffect(() => {
-    let isAlive = true;
-    let es = null;
+    let active = true;
+    let sse = null;
     try {
-      const url = window.location.hostname === 'localhost'
-        ? 'http://localhost:8000/api/whale/stream'
-        : 'https://quantai-production.up.railway.app/api/whale/stream';
-      es = new EventSource(url);
-      es.onopen = () => { if (isAlive) setStatus('Live'); };
-      es.onmessage = (e) => {
-        if (!isAlive) return;
+      const domain = window.location.hostname === 'localhost'
+        ? 'http://localhost:8000'
+        : 'https://quantai-production.up.railway.app';
+
+      sse = new EventSource(domain + '/api/whale/stream');
+      sse.onopen = () => { if (active) setStatus('ON'); }
+      sse.onmessage = (e) => {
+        if (!active) return;
         try {
-          const data = JSON.parse(e.data);
-          if (data) setAlerts(prev => [data, ...prev].slice(0, 5));
+          const d = JSON.parse(e.data);
+          if (d) setMsgs(p => [d, ...p].slice(0, 5));
         } catch (err) { }
-      };
-      es.onerror = () => { if (isAlive) setStatus('Retry'); };
+      }
+      sse.onerror = () => { if (active) setStatus('OFF'); }
     } catch (e) { }
-    return () => { isAlive = false; if (es) es.close(); };
+
+    return () => { active = false; if (sse) sse.close(); }
   }, []);
 
-  const s = {
-    container: { flex: 1, display: 'flex', flexDirection: 'column', background: '#0d1117', borderTop: '1px solid #1e2d45', minHeight: '180px', overflow: 'hidden' },
-    header: { padding: '10px 15px', background: '#131c2e', borderBottom: '1px solid #1e2d45', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-    item: (isBuy) => ({ padding: '10px', marginBottom: '6px', background: isBuy ? 'rgba(38,166,154,0.05)' : 'rgba(239,83,80,0.05)', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '12px' })
-  };
-
   return (
-    <div style={s.container}>
-      <div style={s.header}>
-        <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>🐋 실시간 고래 감시</span>
-        <span style={{ color: status === 'Live' ? '#26a69a' : '#ef5350', fontSize: '10px' }}>{status}</span>
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column',
+      background: '#0d1117', borderTop: '1px solid #1e2d45',
+      minHeight: '200px', overflow: 'hidden'
+    }}>
+      <div style={{
+        padding: '10px 15px', background: '#131c2e',
+        borderBottom: '1px solid #1e2d45', display: 'flex',
+        justifyContent: 'space-between', alignItems: 'center'
+      }}>
+        <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }}>🐋 실시간 고래 감시</span>
+        <span style={{ fontSize: '10px', color: status === 'ON' ? '#26a69a' : '#ef5350' }}>{status}</span>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-        {alerts.length === 0 ? (
-          <div style={{ color: '#475569', textAlign: 'center', fontSize: '11px', padding: '20px 0' }}>데이터 대기 중...</div>
+        {msgs.length === 0 ? (
+          <div style={{ color: '#475569', textAlign: 'center', fontSize: '12px', padding: '30px 0' }}>
+            거래 데이터 대기 중...
+          </div>
         ) : (
-          alerts.map((a, i) => (
-            <div key={i} style={s.item(a.side === 'BUY')}>
+          msgs.map((m, i) => (
+            <div key={i} style={{
+              padding: '10px', marginBottom: '8px',
+              background: m.side === 'BUY' ? 'rgba(38,166,154,0.05)' : 'rgba(239,83,80,0.05)',
+              borderRadius: '4px', border: '1px solid #1e2d45',
+              display: 'flex', justifyContent: 'space-between'
+            }}>
               <div>
-                <div style={{ color: a.side === 'BUY' ? '#26a69a' : '#ef5350', fontWeight: 'bold' }}>{a.side === 'BUY' ? '매수' : '매도'}</div>
-                <div style={{ color: '#fff', fontWeight: 'bold' }}>${(Number(a.amount || 0) / 1000).toFixed(0)}K</div>
+                <div style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '12px', fontWeight: 'bold' }}>
+                  {m.side === 'BUY' ? '매수' : m.side === 'SELL' ? '매도' : '알림'}
+                </div>
+                <div style={{ color: '#fff', fontSize: '14px', fontWeight: 'bold', marginTop: '2px' }}>
+                  ${Number(m.amount || 0) > 0 ? (Number(m.amount) / 1000).toFixed(0) + 'K' : 'SYSTEM'}
+                </div>
               </div>
-              <div style={{ textAlign: 'right', color: '#475569', fontSize: '10px' }}>
-                <div>{a.timestamp}</div>
-                <div>{Number(a.qty || 0).toFixed(2)} BTC</div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: '#475569', fontSize: '10px' }}>{m.timestamp}</div>
+                {m.qty && <div style={{ color: '#64748b', fontSize: '10px' }}>{Number(m.qty).toFixed(2)} BTC</div>}
               </div>
             </div>
           ))
@@ -87,9 +100,8 @@ function App() {
             <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
           </ErrorBoundary>
 
-          <ErrorBoundary>
-            <WhaleWatcher />
-          </ErrorBoundary>
+          {/* 🐋 독립적인 컴포넌트로 에러 방지 */}
+          <BigWhaleMonitor />
 
           <ErrorBoundary>
             <FearGreed />
