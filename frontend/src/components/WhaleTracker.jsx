@@ -1,34 +1,26 @@
-import React from 'react'
+import { useState, useEffect } from 'react'
 
-/**
- * WhaleTracker - 안전 진단 모드
- * 모든 기능을 끄고 화면이 나오는지부터 확인합니다.
- */
 export function WhaleTracker() {
-    try {
-        const style = {
+    // 가장 원시적인 형태의 렌더링으로 테스트
+    return (
+        <div style={{
             padding: '20px',
             background: '#0d1117',
             color: '#94a3b8',
-            fontSize: '12px',
+            fontSize: '13px',
             textAlign: 'center',
             borderTop: '1px solid #1e2d45',
-            height: '100px',
+            flex: 1,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-        };
-
-        return (
-            <div style={style}>
-                🐋 고래 추적 시스템 작동 테스트 중...
-                <br />
-                (이 문구가 보인다면 컴포넌트 로딩은 성공입니다!)
-            </div>
-        );
-    } catch (e) {
-        return <div style={{ color: 'red' }}>Error in Render</div>;
-    }
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minHeight: '150px'
+        }}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '18px' }}>🐋</p>
+            <p style={{ margin: 0 }}>고래 추적 시스템 준비 중...</p>
+            <p style={{ marginTop: '10px', fontSize: '11px', color: '#475569' }}>
+                (이 화면이 보인다면 로딩 성공입니다)
+            </p>
+        </div>
+    );
 }
-
-export default WhaleTracker;
