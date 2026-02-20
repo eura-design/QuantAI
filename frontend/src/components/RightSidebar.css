@@ -19,13 +19,18 @@
     border-left: none !important;
 }
 
-/* 첫 번째 사이드바 배분: 리포트(자동 확장), 지수(고정) */
+/* 첫 번째 사이드바 배분: 리포트(flex), 고래(flex), 지수(고정) */
 .sidebar-column:nth-of-type(2)>div:nth-child(1) {
-    flex: 1;
+    flex: 1.2;
     min-height: 0;
 }
 
 .sidebar-column:nth-of-type(2)>div:nth-child(2) {
+    flex: 1;
+    min-height: 0;
+}
+
+.sidebar-column:nth-of-type(2)>div:nth-child(3) {
     flex: 0 0 auto;
 }
 

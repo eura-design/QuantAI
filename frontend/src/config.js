@@ -15,6 +15,7 @@ export const API = {
     CHAT_MESSAGES: `${BASE_URL}/api/chat/messages`,
     CHAT_SEND: `${BASE_URL}/api/chat/send`,
     CHAT_STREAM: `${BASE_URL}/api/chat/stream`,
+    WHALE_STREAM: `${BASE_URL}/api/whale/stream`,
     NEWS: `${BASE_URL}/api/news`,
     EVENTS: `${BASE_URL}/api/events`,
     HEALTH: `${BASE_URL}/api/health`

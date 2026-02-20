@@ -2,6 +2,7 @@ import { Header } from './components/Header'
 import { ChartPanel } from './components/ChartPanel'
 import { ReportPanel } from './components/ReportPanel'
 import { FearGreed } from './components/FearGreed'
+import { WhaleTracker } from './components/WhaleTracker'
 import { EventCalendar } from './components/EventCalendar'
 import { ChatPanel } from './components/ChatPanel'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -28,6 +29,10 @@ function App() {
               error={error}
               onRefresh={refetch}
             />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
+            <WhaleTracker />
           </ErrorBoundary>
 
           <ErrorBoundary>

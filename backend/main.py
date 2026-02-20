@@ -9,6 +9,7 @@ from contextlib import contextmanager
 
 DB_NAME = "quant_v2.db"
 clients = set()
+whale_clients = set()
 rate_limits = {}
 
 @contextmanager
@@ -32,7 +33,36 @@ app = FastAPI(title="QuantAI API", version="1.5.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
-def startup(): init_db()
+def startup(): 
+    init_db()
+    asyncio.create_task(watch_whale_trades())
+
+async def watch_whale_trades():
+    """바이낸스에서 대형 체결(고래) 실시간 감시"""
+    while True:
+        try:
+            # 최근 1분간의 틱 데이터 중 큰 것만 필터링 (데모용으로 REST 활용, 운영시 WS 권장)
+            res = requests.get("https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=100").json()
+            for t in res:
+                qty = float(t['qty'])
+                price = float(t['price'])
+                amount = qty * price
+                
+                # $150,000 (약 2억 원) 이상만 고래로 간주
+                if amount >= 150000:
+                    whale_data = {
+                        "id": t['id'],
+                        "price": price,
+                        "qty": qty,
+                        "amount": amount,
+                        "side": "BUY" if not t['isBuyerMaker'] else "SELL", # isBuyerMaker=True 이면 매도
+                        "timestamp": datetime.fromtimestamp(t['time']/1000).strftime('%H:%M:%S')
+                    }
+                    for q in list(whale_clients): await q.put(whale_data)
+            await asyncio.sleep(10) # 10초마다 확인
+        except Exception as e:
+            print(f"Whale Watcher Error: {e}")
+            await asyncio.sleep(10)
 
 @app.get("/api/strategy")
 def strategy():
@@ -79,6 +109,17 @@ async def chat_stream(request: Request):
                 if await request.is_disconnected(): break
                 msg = await q.get(); yield {"data": json.dumps(msg)}
         finally: clients.remove(q)
+    return EventSourceResponse(event_generator())
+
+@app.get("/api/whale/stream")
+async def whale_stream(request: Request):
+    async def event_generator():
+        q = asyncio.Queue(); whale_clients.add(q)
+        try:
+            while True:
+                if await request.is_disconnected(): break
+                whale_alert = await q.get(); yield {"data": json.dumps(whale_alert)}
+        finally: whale_clients.remove(q)
     return EventSourceResponse(event_generator())
 
 @app.post("/api/chat/send")
