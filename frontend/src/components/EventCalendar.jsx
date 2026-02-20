@@ -8,8 +8,11 @@ export function EventCalendar() {
     useEffect(() => {
         fetch(API.EVENTS)
             .then(res => res.json())
-            .then(data => setEvents(data))
-            .catch(() => { })
+            .then(data => {
+                if (Array.isArray(data)) setEvents(data);
+                else setEvents([]);
+            })
+            .catch(() => setEvents([]))
     }, [])
 
     if (events.length === 0) return null
@@ -20,16 +23,20 @@ export function EventCalendar() {
                 <span className={styles.icon}>📅</span> 주요 경제 일정
             </h3>
             <div className={styles.list}>
-                {events.map((ev, i) => (
-                    <div key={i} className={`${styles.item} ${styles[ev.impact]}`}>
-                        <div className={styles.dDay}>{ev.d_day}</div>
-                        <div className={styles.info}>
-                            <div className={styles.eventTitle}>{ev.title}</div>
-                            <div className={styles.date}>{ev.date}</div>
+                {(Array.isArray(events) ? events : []).map((ev, i) => {
+                    if (!ev) return null;
+                    const impactClass = ev.impact ? (styles[ev.impact] || '') : '';
+                    return (
+                        <div key={i} className={`${styles.item} ${impactClass}`}>
+                            <div className={styles.dDay}>{ev.d_day || 'D-?'}</div>
+                            <div className={styles.info}>
+                                <div className={styles.eventTitle}>{ev.title || '일정 정보 없음'}</div>
+                                <div className={styles.date}>{ev.date || ''}</div>
+                            </div>
+                            <div className={styles.impactBadge}>{ev.impact || 'Normal'}</div>
                         </div>
-                        <div className={styles.impactBadge}>{ev.impact}</div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     )

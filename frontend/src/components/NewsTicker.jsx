@@ -24,12 +24,15 @@ export function NewsTicker() {
             <div className={styles.label}>LATEST NEWS</div>
             <div className={styles.track}>
                 <div className={styles.content}>
-                    {news.concat(news).map((item, i) => (
-                        <span key={i} className={styles.newsItem}>
-                            <span className={styles.dot}>•</span>
-                            {item}
-                        </span>
-                    ))}
+                    {(Array.isArray(news) ? news.concat(news) : []).map((item, i) => {
+                        if (typeof item !== 'string' && typeof item !== 'number') return null;
+                        return (
+                            <span key={i} className={styles.newsItem}>
+                                <span className={styles.dot}>•</span>
+                                {item}
+                            </span>
+                        );
+                    })}
                 </div>
             </div>
         </div>

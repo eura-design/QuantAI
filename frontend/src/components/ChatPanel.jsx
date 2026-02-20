@@ -77,15 +77,18 @@ export function ChatPanel() {
             </div>
 
             <div className={styles.messages}>
-                {messages.map((msg, i) => (
-                    <div key={i} className={`${styles.messageRow} ${msg.sender === myId ? styles.myMessage : ''}`}>
-                        <div className={styles.sender}>{msg.sender}</div>
-                        <div className={styles.bubble}>
-                            {msg.text}
-                            <span className={styles.time}>{msg.timestamp}</span>
+                {(Array.isArray(messages) ? messages : []).map((msg, i) => {
+                    if (!msg) return null;
+                    return (
+                        <div key={i} className={`${styles.messageRow} ${msg.sender === myId ? styles.myMessage : ''}`}>
+                            <div className={styles.sender}>{msg.sender || 'Anonymous'}</div>
+                            <div className={styles.bubble}>
+                                {msg.text || ''}
+                                <span className={styles.time}>{msg.timestamp || ''}</span>
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
                 <div ref={messagesEndRef} />
             </div>
 

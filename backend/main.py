@@ -9,7 +9,6 @@ from contextlib import contextmanager
 
 DB_NAME = "quant_v2.db"
 clients = set()
-whale_clients = set()
 rate_limits = {}
 
 @contextmanager
@@ -35,42 +34,8 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 @app.on_event("startup")
 def startup(): 
     init_db()
-    asyncio.create_task(watch_whale_trades())
 
-async def watch_whale_trades():
-    """바이낸스 대형 체결 실시간 감시 (안정화 버전)"""
-    last_id = 0
-    while True:
-        try:
-            res = requests.get("https://api.binance.com/api/v3/trades?symbol=BTCUSDT&limit=50", timeout=5).json()
-            if not isinstance(res, list): 
-                await asyncio.sleep(5)
-                continue
-                
-            for t in reversed(res):
-                t_id = t['id']
-                if last_id == 0: 
-                    last_id = t_id
-                    break
-                if t_id <= last_id: continue
-                
-                amount = float(t['qty']) * float(t['price'])
-                if amount >= 50000:
-                    alert = {
-                        "type": "trade",
-                        "id": t_id,
-                        "price": float(t['price']),
-                        "qty": float(t['qty']),
-                        "amount": amount,
-                        "side": "BUY" if not t['isBuyerMaker'] else "SELL",
-                        "timestamp": datetime.fromtimestamp(t['time']/1000).strftime('%H:%M:%S')
-                    }
-                    for q in list(whale_clients): await q.put(alert)
-                last_id = max(last_id, t_id)
-            await asyncio.sleep(2)
-        except Exception as e:
-            print(f"Whale Watcher Error: {e}")
-            await asyncio.sleep(5)
+
 
 @app.get("/api/strategy")
 def strategy():
@@ -106,37 +71,30 @@ def get_events():
 @app.get("/api/chat/stream")
 async def chat_stream(request: Request):
     async def event_generator():
-        q = asyncio.Queue(); clients.add(q)
+        # 사용자가 데이터를 못 받을 경우를 대비해 큐 크기를 20개로 제한 (메모리 누수 방지)
+        q = asyncio.Queue(maxsize=20); clients.add(q)
         try:
             with get_db() as conn:
                 for row in conn.execute("SELECT sender, text, timestamp FROM messages ORDER BY id ASC LIMIT 50").fetchall():
                     yield {"data": json.dumps(dict(row))}
             while True:
                 if await request.is_disconnected(): break
-                msg = await q.get(); yield {"data": json.dumps(msg)}
+                try:
+                    msg = await asyncio.wait_for(q.get(), timeout=15.0)
+                    yield {"data": json.dumps(msg)}
+                except asyncio.TimeoutError:
+                    yield {"comment": "hb"}
         finally: clients.remove(q)
     return EventSourceResponse(event_generator())
 
-@app.get("/api/whale/stream")
-async def whale_stream(request: Request):
-    async def event_generator():
-        q = asyncio.Queue(); whale_clients.add(q)
-        try:
-            yield {"data": json.dumps({
-                "type": "system",
-                "text": "🐋 실시간 고래 추적 시스템 연결됨 ($50K+)",
-                "timestamp": datetime.now().strftime('%H:%M:%S')
-            })}
-            while True:
-                if await request.is_disconnected(): break
-                whale_alert = await q.get(); yield {"data": json.dumps(whale_alert)}
-        finally: whale_clients.remove(q)
-    return EventSourceResponse(event_generator())
+
 
 @app.post("/api/chat/send")
 async def send_message(msg: ChatMessage, request: Request):
     ip, now = request.client.host, datetime.now().timestamp()
-    limit = rate_limits.setdefault(ip, {"tokens": 5, "last_update": now})
+    if ip not in rate_limits:
+        rate_limits[ip] = {"tokens": 5, "last_update": now}
+    limit = rate_limits[ip]
     limit["tokens"] = min(5, limit["tokens"] + int((now - limit["last_update"]) / 10))
     limit["last_update"] = now
     if limit["tokens"] <= 0: raise HTTPException(429, "Too many messages")
@@ -145,11 +103,15 @@ async def send_message(msg: ChatMessage, request: Request):
     with get_db() as conn:
         conn.execute("INSERT INTO messages (sender, text, timestamp) VALUES (?,?,?)", (msg.sender, msg.text, msg.timestamp))
         conn.commit()
-    for q in list(clients): await q.put(msg.dict())
+    for q in list(clients):
+        try:
+            q.put_nowait(msg.dict())
+        except asyncio.QueueFull:
+            pass
     return {"status": "ok"}
 
 @app.get("/")
 def root(): return {"status": "ok"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)

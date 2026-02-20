@@ -18,8 +18,8 @@ export function ReportPanel({ data, loading, error, onRefresh }) {
                 <div className={styles.metricsRow}>
                     {[
                         ['기준가', `$${fmt(data.price)}`],
-                        ['펀딩비', `${data.funding_rate.toFixed(4)}%`],
-                        ['미결제약정', `${(data.open_interest / 1000).toFixed(1)}K`]
+                        ['펀딩비', `${(data.funding_rate || 0).toFixed(4)}%`],
+                        ['미결제약정', `${((data.open_interest || 0) / 1000).toFixed(1)}K`]
                     ].map(([l, v]) => (
                         <div key={l} className={styles.metric}>
                             <span className={styles.metricLabel}>{l}</span>
@@ -37,9 +37,9 @@ export function ReportPanel({ data, loading, error, onRefresh }) {
                     </div>
                 ) : data && (
                     <pre className={styles.reportText}>
-                        {data.strategy.includes("RESOURCE_EXHAUSTED")
+                        {data.strategy && data.strategy.includes("RESOURCE_EXHAUSTED")
                             ? "🚨 현재 AI 분석 요청이 너무 많습니다 (API 할당량 부족).\n잠시 후 다시 시도해 주세요."
-                            : data.strategy}
+                            : data.strategy || "AI 분석 내용을 불러올 수 없습니다."}
                     </pre>
                 )}
             </div>
