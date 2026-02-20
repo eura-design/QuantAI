@@ -9,7 +9,7 @@ import sqlite3
 from pydantic import BaseModel
 
 # --- [ DB 설정 ] ---
-DB_NAME = "chat.db"
+DB_NAME = "quant_v1.db"
 
 def init_db():
     conn = sqlite3.connect(DB_NAME)
