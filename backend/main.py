@@ -38,8 +38,21 @@ app = FastAPI(title="QuantAI API", version="1.6.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
-def startup(): 
+async def startup(): 
     init_db()
+    asyncio.create_task(reset_votes_periodically())
+
+async def reset_votes_periodically():
+    """4시간마다 투표 초기화 (00, 04, 08, 12, 16, 20시)"""
+    global votes
+    last_period = datetime.now().hour // 4
+    while True:
+        await asyncio.sleep(60) # 1분마다 체크
+        curr_period = datetime.now().hour // 4
+        if curr_period != last_period:
+            votes = {"bull": 0, "bear": 0, "total": 0}
+            last_period = curr_period
+            print(f"[{datetime.now()}] 투표 데이터가 새 세션을 위해 초기화되었습니다.")
 
 @app.get("/api/strategy")
 def strategy():

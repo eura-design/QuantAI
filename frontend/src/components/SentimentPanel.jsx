@@ -51,7 +51,10 @@ export function SentimentPanel() {
             </div>
 
             <div className={styles.voteStatus}>
-                <div className={styles.voteTitle}>커뮤니티 투표 현황</div>
+                <div className={styles.voteTitle}>
+                    커뮤니티 투표 현황
+                    <span className={styles.resetInfo}>(4시간 단위 초기화)</span>
+                </div>
                 <div className={styles.voteStats}>
                     <span className={styles.bullText}>Bull: {votes.bull}</span>
                     <span className={styles.bearText}>Bear: {votes.bear}</span>

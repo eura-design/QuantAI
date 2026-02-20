@@ -55,8 +55,17 @@
 
 .voteTitle {
     font-size: 0.75rem;
-    color: #64748b;
+    color: #8b949e;
     margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.resetInfo {
+    font-size: 0.65rem;
+    color: #484f58;
+    font-weight: normal;
 }
 
 .voteStats {
