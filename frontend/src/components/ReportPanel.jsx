@@ -14,14 +14,17 @@ export function ReportPanel({ data, loading, error, onRefresh }) {
                 <div><div className={styles.panelTitle}>AI 분석 리포트</div>{data && <div className={styles.generatedAt}>시각: {data.generated_at}</div>}</div>
                 <button className={styles.refreshBtn} onClick={onRefresh} disabled={loading}><span className={loading ? styles.spin : ''}>↻</span></button>
             </div>
-            <div className={styles.priceBlock}>
-                <div className={styles.priceLabel}>분석 기준가</div>
-                {loading ? <div className={styles.priceSkeleton} /> : <div className={styles.priceValue}>${fmt(data?.price)}<span className={styles.priceUnit}>USDT</span></div>}
-            </div>
             {data && (
                 <div className={styles.metricsRow}>
-                    {[['펀딩비', `${data.funding_rate.toFixed(4)}%`], ['미결제약정', `${(data.open_interest / 1000).toFixed(1)}K`]].map(([l, v]) => (
-                        <div key={l} className={styles.metric}><span className={styles.metricLabel}>{l}</span><span className={styles.metricValue}>{v}</span></div>
+                    {[
+                        ['기준가', `$${fmt(data.price)}`],
+                        ['펀딩비', `${data.funding_rate.toFixed(4)}%`],
+                        ['미결제약정', `${(data.open_interest / 1000).toFixed(1)}K`]
+                    ].map(([l, v]) => (
+                        <div key={l} className={styles.metric}>
+                            <span className={styles.metricLabel}>{l}</span>
+                            <span className={styles.metricValue}>{v}</span>
+                        </div>
                     ))}
                 </div>
             )}

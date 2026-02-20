@@ -73,58 +73,11 @@
     animation: spin 0.8s linear infinite;
 }
 
-.priceBlock {
-    padding: 14px 20px;
-    border-bottom: 1px solid #1e2d45;
-    background: linear-gradient(135deg, #0f1e35 0%, #0d1b2e 100%);
-    flex-shrink: 0;
-}
-
-.priceLabel {
-    font-size: 0.65rem;
-    color: #334155;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 5px;
-}
-
-.priceSkeleton {
-    width: 160px;
-    height: 36px;
-    background: linear-gradient(90deg, #1e2d45 25%, #253d5f 50%, #1e2d45 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 6px;
-}
-
-@keyframes shimmer {
-    0% {
-        background-position: 200% 0;
-    }
-
-    100% {
-        background-position: -200% 0;
-    }
-}
-
-.priceValue {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: -0.02em;
-}
-
-.priceUnit {
-    font-size: 0.85rem;
-    color: #475569;
-    font-weight: 400;
-    margin-left: 5px;
-}
-
 .metricsRow {
     display: flex;
-    padding: 10px 20px;
-    gap: 24px;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #0f1e35 0%, #0d1b2e 100%);
     border-bottom: 1px solid #1e2d45;
     flex-shrink: 0;
 }
