@@ -4,16 +4,22 @@ import styles from './FearGreed.module.css'
 const API_URL = 'https://quantai-production.up.railway.app/api/fear_greed'
 
 export function FearGreed() {
-    const [data, setData] = useState({ value: 50, value_classification: 'Neutral' })
+    const [data, setData] = useState({ value: '50', value_classification: 'Neutral' })
 
     useEffect(() => {
         fetch(API_URL)
             .then(r => r.json())
-            .then(d => setData(d))
-            .catch(e => console.error('F&G Error:', e))
+            .then(d => {
+                if (d && d.value) setData(d)
+                else setData({ value: '50', value_classification: 'Neutral' })
+            })
+            .catch(e => {
+                console.error('F&G Error:', e)
+                setData({ value: '50', value_classification: 'Neutral' })
+            })
     }, [])
 
-    const val = parseInt(data.value)
+    const val = parseInt(data?.value || '50')
 
     // 색상 결정
     let color = '#fbbf24' // Neutral

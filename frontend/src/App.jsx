@@ -3,6 +3,7 @@ import { ChartPanel } from './components/ChartPanel'
 import { ReportPanel } from './components/ReportPanel'
 import { FearGreed } from './components/FearGreed'
 import { ChatPanel } from './components/ChatPanel'
+import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
 import './App.css'
 
@@ -13,16 +14,27 @@ function App() {
     <div className="app">
       <Header />
       <div className="main-layout">
-        <ChartPanel />
+        <ErrorBoundary>
+          <ChartPanel />
+        </ErrorBoundary>
+
         <div className="right-sidebar">
-          <ReportPanel
-            data={data}
-            loading={loading}
-            error={error}
-            onRefresh={refetch}
-          />
-          <FearGreed />
-          <ChatPanel />
+          <ErrorBoundary>
+            <ReportPanel
+              data={data}
+              loading={loading}
+              error={error}
+              onRefresh={refetch}
+            />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
+            <FearGreed />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
+            <ChatPanel />
+          </ErrorBoundary>
         </div>
       </div>
     </div>
