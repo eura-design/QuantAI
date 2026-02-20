@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 
-const API_URL = 'http://localhost:8001/api/strategy'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001/api/strategy'
 
 export function useStrategy() {
     const [data, setData] = useState(null)
