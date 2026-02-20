@@ -14,11 +14,21 @@ DB_NAME = "chat.db"
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
+    # 채팅 테이블
     c.execute('''CREATE TABLE IF NOT EXISTS messages
                  (id INTEGER PRIMARY KEY AUTOINCREMENT,
                   sender TEXT,
                   text TEXT,
                   timestamp TEXT)''')
+    # 전략 테이블 (캐싱용)
+    c.execute('''CREATE TABLE IF NOT EXISTS strategy_history
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  price REAL,
+                  strategy TEXT,
+                  generated_at TEXT,
+                  funding_rate REAL,
+                  open_interest REAL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     conn.commit()
     conn.close()
 
@@ -30,7 +40,7 @@ class ChatMessage(BaseModel):
 app = FastAPI(
     title="QuantAI API",
     description="BTC/USDT 실시간 AI 분석 백엔드 & 채팅",
-    version="1.3.0"
+    version="1.3.1"
 )
 
 @app.on_event("startup")
@@ -42,7 +52,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "https://quant-ai-analyst.vercel.app",
-        "*"  # 최후의 수단 (모두 허용)
+        "*"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -53,56 +63,60 @@ app.add_middleware(
 def read_root():
     return {"status": "ok", "service": "QuantAI Backend"}
 
-
 @app.get("/api/health")
 async def health():
-    """서버 상태 확인"""
     return {"status": "ok"}
 
-
-# 15분 캐싱을 위한 전역 변수
-cache = {
-    "data": None,
-    "timestamp": None
-}
+# 15분 캐싱 (DB 기반)
 CACHE_DURATION_MINUTES = 15
 
 @app.get("/api/strategy")
 async def strategy():
-    """
-    Gemini AI + 바이낸스 데이터를 기반으로 BTC 매매 전략을 반환합니다.
-    (15분 캐싱 적용으로 API 호출 제한 방지)
-    """
-    global cache
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    
+    # 1. 최신 데이터 조회
+    c.execute("SELECT * FROM strategy_history ORDER BY id DESC LIMIT 1")
+    row = c.fetchone()
+    
     now = datetime.now()
+    
+    # 2. 캐시 유효성 검사 (15분 이내인지)
+    if row:
+        last_generated = datetime.strptime(row['generated_at'], "%Y-%m-%d %H:%M:%S")
+        if now - last_generated < timedelta(minutes=CACHE_DURATION_MINUTES):
+            conn.close()
+            return dict(row)
 
-    # 1. 캐시가 유효하면 (15분 이내) 저장된 데이터 반환
-    if cache["data"] and cache["timestamp"]:
-        if now - cache["timestamp"] < timedelta(minutes=CACHE_DURATION_MINUTES):
-            return cache["data"]
+    conn.close()
 
     try:
-        # 2. 새로운 데이터 요청
+        # 3. 새로운 데이터 요청
         result = get_ai_strategy()
         
-        # 성공 시 캐시 업데이트
-        cache["data"] = result
-        cache["timestamp"] = now
+        # 4. DB에 저장
+        conn = sqlite3.connect(DB_NAME)
+        c = conn.cursor()
+        c.execute('''INSERT INTO strategy_history 
+                     (price, strategy, generated_at, funding_rate, open_interest) 
+                     VALUES (?, ?, ?, ?, ?)''',
+                  (result['price'], result['strategy'], result['generated_at'], 
+                   result['funding_rate'], result['open_interest']))
+        conn.commit()
+        conn.close()
         
         return result
-    except Exception as e:
-        # 3. 에러 발생 시 (API 한도 초과 등)
-        print(f"Error fetching strategy: {e}")
-
-        # A. 기존 캐시가 있다면 그거라도 반환
-        if cache["data"]:
-            return cache["data"]
         
-        # B. 캐시도 없다면? (서버 재시작 직후 등) -> '분석 대기 중' 가짜 데이터 반환
-        # 이렇게 하면 사용자는 절대 에러를 보지 않음
+    except Exception as e:
+        print(f"Error fetching strategy: {e}")
+        # 에러 발생 시 과거 데이터라도 반환
+        if row:
+            return dict(row)
+            
         return {
             "price": 0,
-            "strategy": "⚠️ AI 요청량이 많아 잠시 대기 중입니다. (잠시 후 다시 시도됩니다)",
+            "strategy": "⚠️ AI 요청량이 많아 잠시 대기 중입니다.",
             "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
             "funding_rate": 0,
             "open_interest": 0
@@ -141,8 +155,10 @@ def get_messages():
     messages = [dict(row) for row in rows]
     return messages[::-1]
 
+from fastapi import Request
+
 @app.get("/api/chat/stream")
-async def message_stream(request: requests.Request):
+async def message_stream(request: Request):
     async def event_generator():
         q = asyncio.Queue()
         clients.add(q)

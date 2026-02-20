@@ -75,11 +75,8 @@ export function ReportPanel({ data, loading, error, onRefresh }) {
                         <div className={styles.errorIcon}>⚡</div>
                         <div style={{ fontWeight: 600, marginBottom: '4px' }}>AI 분석 대기 중...</div>
                         <div style={{ fontSize: '0.75rem', opacity: 0.7, marginBottom: '16px' }}>
-                            잠시 후 자동으로 정보를 받아옵니다.
+                            시스템이 자동으로 재시도 중입니다.
                         </div>
-                        <button className={styles.retryBtn} onClick={onRefresh}>
-                            지금 다시 시도
-                        </button>
                     </div>
                 )}
 
