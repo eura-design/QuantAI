@@ -51,6 +51,13 @@ def strategy():
         return res
     except: return dict(row) if row else {"strategy": "⚠️ 데이터 수집 중..."}
 
+@app.get("/api/fear_greed")
+def fear_greed():
+    try:
+        res = requests.get("https://api.alternative.me/fng/").json()
+        return res['data'][0]
+    except: return {"value": "50", "value_classification": "Neutral"}
+
 @app.get("/api/news")
 def get_news():
     return fetch_crypto_news()
