@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './ChatPanel.module.css'
 
-const BASE_URL = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.split('/api')[0]
-    : 'http://localhost:8001'
-
-const WS_URL = BASE_URL.replace('http', 'ws') + '/ws/chat'
+const WS_URL = import.meta.env.PROD
+    ? 'wss://quantai-production.up.railway.app/ws/chat'
+    : 'ws://localhost:8001/ws/chat'
 
 export function ChatPanel() {
     const [messages, setMessages] = useState([])
