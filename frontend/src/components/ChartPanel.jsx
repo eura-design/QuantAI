@@ -269,7 +269,7 @@ export function ChartPanel() {
                     setOhlcv({ o: formatPrice(open), h: formatPrice(high), l: formatPrice(low), c: formatPrice(close), v: formatVol(vol) })
                     setLastUpdate(new Date().toTimeString().slice(0, 8))
                 } catch (err) {
-                    // console.warn('Chart update ignored:', err)
+                    // ignored
                 }
             }
 

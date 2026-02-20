@@ -1,246 +1,97 @@
-import uvicorn
+import uvicorn, sqlite3, requests, asyncio
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from analyzer import get_ai_strategy
-from typing import List
-import requests
-import sqlite3
+from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
+from analyzer import get_ai_strategy
+from contextlib import contextmanager
 
-# --- [ DB 설정 ] ---
 DB_NAME = "quant_v1.db"
 
-def init_db():
+@contextmanager
+def get_db():
     conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    # 채팅 테이블
-    c.execute('''CREATE TABLE IF NOT EXISTS messages
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  sender TEXT,
-                  text TEXT,
-                  timestamp TEXT)''')
-    # 전략 테이블 (캐싱용)
-    c.execute('''CREATE TABLE IF NOT EXISTS strategy_history
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
-                  price REAL,
-                  strategy TEXT,
-                  generated_at TEXT,
-                  funding_rate REAL,
-                  open_interest REAL,
-                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
+    conn.row_factory = sqlite3.Row
+    try: yield conn
+    finally: conn.close()
+
+def init_db():
+    with get_db() as conn:
+        c = conn.cursor()
+        c.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, text TEXT, timestamp TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS strategy_history (id INTEGER PRIMARY KEY AUTOINCREMENT, price REAL, strategy TEXT, generated_at TEXT, funding_rate REAL, open_interest REAL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        conn.commit()
 
 class ChatMessage(BaseModel):
-    sender: str
-    text: str
-    timestamp: str
+    sender: str; text: str; timestamp: str
 
-app = FastAPI(
-    title="QuantAI API",
-    description="BTC/USDT 실시간 AI 분석 백엔드 & 채팅",
-    version="1.3.1"
-)
+app = FastAPI(title="QuantAI API", version="1.3.1")
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
-def startup_event():
-    init_db()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "https://quant-ai-analyst.vercel.app",
-        "*"
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def startup(): init_db()
 
 @app.get("/")
-def read_root():
-    return {"status": "ok", "service": "QuantAI Backend"}
-
-@app.get("/api/health")
-async def health():
-    return {"status": "ok"}
-
-# 15분 캐싱 (DB 기반)
-CACHE_DURATION_MINUTES = 15
+def root(): return {"status": "ok", "service": "QuantAI"}
 
 @app.get("/api/strategy")
 def strategy():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    
-    # 1. 최신 데이터 조회
-    c.execute("SELECT * FROM strategy_history ORDER BY id DESC LIMIT 1")
-    row = c.fetchone()
-    
-    now = datetime.now()
-    
-    # 2. 캐시 유효성 검사 (15분 이내인지)
-    if row:
-        last_generated = datetime.strptime(row['generated_at'], "%Y-%m-%d %H:%M:%S")
-        if now - last_generated < timedelta(minutes=CACHE_DURATION_MINUTES):
-            conn.close()
+    with get_db() as conn:
+        row = conn.execute("SELECT * FROM strategy_history ORDER BY id DESC LIMIT 1").fetchone()
+        if row and datetime.now() - datetime.strptime(row['generated_at'], "%Y-%m-%d %H:%M:%S") < timedelta(minutes=15):
             return dict(row)
-
-    conn.close()
 
     try:
-        # 3. 새로운 데이터 요청
-        result = get_ai_strategy()
-        
-        # [중요] AI 분석 실패(에러)시 DB를 오염시키지 않음
-        if result['strategy'].startswith("AI 분석 오류"):
-            print(f"Update failed: {result['strategy']}")
-            if row:
-                # 429 에러 발생 시, 유효기간이 지났더라도 과거 데이터를 보여줌 (서비스 유지)
-                return dict(row)
-            else:
-                return result # 초기 데이터도 없으면 에러 표시
+        res = get_ai_strategy()
+        if not res['strategy'].startswith("AI 분석 오류"):
+            with get_db() as conn:
+                conn.execute("INSERT INTO strategy_history (price, strategy, generated_at, funding_rate, open_interest) VALUES (?,?,?,?,?)",
+                             (res['price'], res['strategy'], res['generated_at'], res['funding_rate'], res['open_interest']))
+                conn.commit()
+        return res if not res['strategy'].startswith("AI 분석 오류") and row else (res if not row else dict(row))
+    except: return dict(row) if row else {"price":0, "strategy":"⚠️ 대기 중", "generated_at":datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "funding_rate":0, "open_interest":0}
 
-        # 4. 성공 시에만 DB에 저장
-        conn = sqlite3.connect(DB_NAME)
-        c = conn.cursor()
-        c.execute('''INSERT INTO strategy_history 
-                     (price, strategy, generated_at, funding_rate, open_interest) 
-                     VALUES (?, ?, ?, ?, ?)''',
-                  (result['price'], result['strategy'], result['generated_at'], 
-                   result['funding_rate'], result['open_interest']))
-        conn.commit()
-        conn.close()
-        
-        return result
-        
-    except Exception as e:
-        print(f"Error fetching strategy: {e}")
-        # 코드 실행 중 에러 발생 시 과거 데이터라도 반환
-        if row:
-            return dict(row)
-            
-        return {
-            "price": 0,
-            "strategy": "⚠️ AI 요청량이 많아 잠시 대기 중입니다.",
-            "generated_at": now.strftime("%Y-%m-%d %H:%M:%S"),
-            "funding_rate": 0,
-            "open_interest": 0
-        }
-
-
-# --- [ 공포/탐욕 지수 API ] ---
 @app.get("/api/fear_greed")
-def get_fear_greed():
-    try:
-        # 무료 API 호출 (Alternative.me)
-        url = "https://api.alternative.me/fng/"
-        response = requests.get(url, timeout=5)
-        data = response.json()
-        return data["data"][0] 
-    except Exception as e:
-        print(f"Fear/Greed Error: {e}")
-        return {"value": "50", "value_classification": "Neutral"}
+def fear_greed():
+    try: return requests.get("https://api.alternative.me/fng/", timeout=5).json()["data"][0]
+    except: return {"value": "50", "value_classification": "Neutral"}
 
-import asyncio
-from sse_starlette.sse import EventSourceResponse
-
-# ... (기존 DB 코드 유지)
-
-# SSE 클라이언트 관리 (메모리 큐)
 clients = set()
 
 @app.get("/api/chat/messages")
 def get_messages():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("SELECT sender, text, timestamp FROM messages ORDER BY id DESC LIMIT 50")
-    rows = c.fetchall()
-    conn.close()
-    messages = [dict(row) for row in rows]
-    return messages[::-1]
-
-from fastapi import Request
+    with get_db() as conn:
+        rows = conn.execute("SELECT sender, text, timestamp FROM messages ORDER BY id DESC LIMIT 50").fetchall()
+        return [dict(r) for r in rows][::-1]
 
 @app.get("/api/chat/stream")
-async def message_stream(request: Request):
+async def chat_stream(request: Request):
     async def event_generator():
-        q = asyncio.Queue()
-        clients.add(q)
+        q = asyncio.Queue(); clients.add(q)
         try:
-            while True:
-                # 연결 끊김 감지
-                if await request.is_disconnected():
-                    break
-                # 큐에서 데이터 기다리기 (무한 대기 아님, 타임오류 방지)
-                try:
-                    data = await asyncio.wait_for(q.get(), timeout=1.0)
-                    yield {"data": data} # SSE 포맷
-                except asyncio.TimeoutError:
-                    # 1초마다 ping (연결 유지용)
-                    yield {"event": "ping", "data": ""}
-        except Exception:
-            pass
-        finally:
-            clients.remove(q)
-
+            while not await request.is_disconnected():
+                try: yield {"data": await asyncio.wait_for(q.get(), 1.0)}
+                except asyncio.TimeoutError: yield {"event": "ping", "data": ""}
+        finally: clients.remove(q)
     return EventSourceResponse(event_generator())
 
-# Rate Limit (IP별 도배 방지)
-# {ip: {"tokens": 5, "last_update": time}}
 rate_limits = {}
-
-from fastapi import Request
 
 @app.post("/api/chat/send")
 async def send_message(msg: ChatMessage, request: Request):
-    try:
-        client_ip = request.client.host
-        now = datetime.now().timestamp()
-        
-        # 0. Rate Limit 체크
-        if client_ip not in rate_limits:
-            rate_limits[client_ip] = {"tokens": 5, "last_update": now}
-        
-        user_limit = rate_limits[client_ip]
-        
-        # 토큰 충전 (10초에 1개)
-        elapsed = now - user_limit["last_update"]
-        new_tokens = int(elapsed / 10)
-        if new_tokens > 0:
-            user_limit["tokens"] = min(5, user_limit["tokens"] + new_tokens)
-            user_limit["last_update"] = now
-            
-        # 토큰 차감
-        if user_limit["tokens"] > 0:
-            user_limit["tokens"] -= 1
-        else:
-            raise HTTPException(status_code=429, detail="Too many messages. Please wait.")
+    ip, now = request.client.host, datetime.now().timestamp()
+    limit = rate_limits.setdefault(ip, {"tokens": 5, "last_update": now})
+    limit["tokens"] = min(5, limit["tokens"] + int((now - limit["last_update"]) / 10))
+    limit["last_update"] = now
+    if limit["tokens"] <= 0: raise HTTPException(429, "Too many messages")
+    limit["tokens"] -= 1
 
-        # 1. DB 저장
-        conn = sqlite3.connect(DB_NAME)
-        c = conn.cursor()
-        c.execute("INSERT INTO messages (sender, text, timestamp) VALUES (?, ?, ?)",
-                  (msg.sender, msg.text, msg.timestamp))
+    with get_db() as conn:
+        conn.execute("INSERT INTO messages (sender, text, timestamp) VALUES (?,?,?)", (msg.sender, msg.text, msg.timestamp))
         conn.commit()
-        conn.close()
-        
-        # 2. 실시간 전파 (모든 클라이언트에게)
-        msg_dict = msg.dict()
-        for q in list(clients):
-            await q.put(msg_dict)
-            
-        return {"status": "ok"}
-    except HTTPException:
-        raise
-    except Exception as e:
-        print(f"[Error] Talk failed: {e}")
-        return {"status": "error", "message": str(e)}
-
+    for q in list(clients): await q.put(msg.dict())
+    return {"status": "ok"}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
