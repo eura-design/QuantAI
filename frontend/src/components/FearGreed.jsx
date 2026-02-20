@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import styles from './FearGreed.module.css'
 
-const API_URL = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.replace('/strategy', '/fear_greed')
-    : 'http://localhost:8001/api/fear_greed'
+const API_URL = 'https://quantai-production.up.railway.app/api/fear_greed'
 
 export function FearGreed() {
     const [data, setData] = useState({ value: 50, value_classification: 'Neutral' })
