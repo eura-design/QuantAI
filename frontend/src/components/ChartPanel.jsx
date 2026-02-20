@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CrosshairMode } from 'lightweight-charts'
 import styles from './ChartPanel.module.css'
+import { MiniChart } from './MiniChart'
 
 const BINANCE_REST = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=500'
 const BINANCE_WS = 'wss://stream.binance.com:9443/ws/btcusdt@kline_5m'
@@ -351,10 +352,18 @@ export function ChartPanel() {
                 </div>
             </div>
 
-            {/* 차트 영역 */}
-            <div className={styles.chartContainer} ref={contRef}>
-                <div className={styles.mainChart} ref={mainRef} />
-                <div className={styles.volChart} ref={volRef} />
+            {/* 메인 차트 영역 */}
+            <div className={styles.mainContent}>
+                <div className={styles.chartContainer} ref={contRef}>
+                    <div className={styles.mainChart} ref={mainRef} />
+                    <div className={styles.volChart} ref={volRef} />
+                </div>
+
+                {/* 보조 차트 (1시간, 1일) */}
+                <div className={styles.subCharts}>
+                    <MiniChart interval="1h" title="1시간봉 (1H)" />
+                    <MiniChart interval="1d" title="일봉 (1D)" />
+                </div>
             </div>
 
             {/* OHLCV 하단 바 */}
