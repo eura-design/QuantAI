@@ -7,7 +7,7 @@ import pandas_ta as ta
 import numpy as np
 from google import genai
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 warnings.filterwarnings("ignore")
 
@@ -307,14 +307,20 @@ def fetch_long_short_ratio():
     exchange = ccxt.binance({'options': {'defaultType': 'future'}})
     try:
         # 글로벌 롱/숏 계정 비율 (최근 5분)
-        resp = exchange.fapiPublicGetGlobalLongShortAccountRatio({'symbol': SYMBOL.replace('/', ''), 'period': '5m', 'limit': 1})
-        if resp:
+        symbol = SYMBOL.replace('/', '')
+        params = {'symbol': symbol, 'period': '5m', 'limit': 1}
+        
+        # CCXT 최신 버전에서는 fapiDataGetGlobalLongShortAccountRatio 사용
+        resp = exchange.fapiDataGetGlobalLongShortAccountRatio(params)
+            
+        if resp and len(resp) > 0:
             data = resp[0]
+            # longAccount: 롱 비율 (0.XX 형식), shortAccount: 숏 비율 (0.XX 형식)
             long_p = float(data['longAccount']) * 100
             short_p = float(data['shortAccount']) * 100
             return {"long": round(long_p, 1), "short": round(short_p, 1)}
     except Exception as e:
-        print(f"Long/Short error: {e}")
+        print(f"[ERROR] Long/Short ratio failed: {e}")
     return {"long": 50.0, "short": 50.0}
 
 def fetch_crypto_news():
@@ -327,23 +333,61 @@ def fetch_crypto_news():
         "비트코인 L2 네트워크 활성 사용자 수 역대 최고치 경신"
     ]
 
+# 파일 기반 캐시 (서버 재시작 대응)
+BRIEF_CACHE_FILE = "brief_cache.json"
+
 def fetch_ai_daily_brief():
-    """뉴스와 시장 상황을 AI로 3줄 요약"""
+    """AI 가 생성한 일일 뉴스 요약 (1시간 파일 캐시 적용)"""
+    import json
+    
+    now = datetime.now()
+    # 1. 파일 캐시 로드 시도
+    if os.path.exists(BRIEF_CACHE_FILE):
+        try:
+            with open(BRIEF_CACHE_FILE, 'r', encoding='utf-8') as f:
+                cache = json.load(f)
+                expiry = datetime.fromisoformat(cache['expiry'])
+                if expiry > now:
+                    return cache['data']
+        except:
+            pass
+
+    # 2. 새로운 브리핑 생성
     news = fetch_crypto_news()
-    news_str = "\n".join(news)
+    sentiment = fetch_long_short_ratio()
+    events = get_economic_events()
+    
+    news_text = "\n".join([f"- {n}" for n in news])
+    event_text = "\n".join([f"- {e['title']} ({e['d_day']})" for e in events])
     
     prompt = f"""
-    당신은 트레이더를 위한 핵심 정보 요약가입니다.
-    다음 뉴스들을 읽고 오늘의 비트코인 시장에서 꼭 알아야 할 내용을 '한국어'로 딱 3줄로만 요약하세요.
-    말투는 전문적이면서 간결하게 작성하세요. (-음/다 체)
-
-    뉴스 리스트:
-    {news_str}
+    당신은 'QuantAI'의 수석 분석가입니다. 다음 데이터를 종합하여 오늘 오전의 **비트코인 핵심 브리핑 3줄**을 작성하세요.
+    - 한국어로 작성할 것
+    - 마크다운 기호를 쓰지 말 것 (텍스트만 3줄)
+    - 줄당 40자 이내로 핵심만 찌를 것
+    
+    [데이터]
+    1. 뉴스: {news_text}
+    2. 시장심리: 롱 {sentiment['long']}% vs 숏 {sentiment['short']}%
+    3. 일정: {event_text}
     """
     try:
-        response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
-        return response.text.strip().split('\n')[:3]
-    except:
+        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
+        briefs = response.text.strip().split('\n')
+        clean_briefs = [b.replace('*', '').replace('-', '').replace('•', '').strip() for b in briefs if b.strip()]
+        result = clean_briefs[:3]
+        
+        if len(result) >= 1:
+            # 파일 캐시 저장
+            with open(BRIEF_CACHE_FILE, 'w', encoding='utf-8') as f:
+                json.dump({
+                    "data": result,
+                    "expiry": (now + timedelta(hours=1)).isoformat()
+                }, f, ensure_ascii=False)
+            return result
+        raise ValueError("Invalid AI Response")
+    except Exception as e:
+        print(f"[ERROR] AI Daily Briefing failed (Switching to fallback): {e}")
         return ["뉴스 요약을 불러올 수 없습니다.", "현재 시장 변동성에 유의하세요.", "주요 경제 일정을 확인하세요."]
 
 def get_economic_events():

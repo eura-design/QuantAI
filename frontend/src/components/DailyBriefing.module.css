@@ -1,19 +1,21 @@
 .container {
-    background: linear-gradient(135deg, #0d1117 0%, #161b22 100%);
-    border: 1px solid #30363d;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 20px;
+    background: rgba(13, 17, 23, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .header {
-    font-size: 0.9rem;
-    font-weight: 700;
+    font-size: 1rem;
+    font-weight: 800;
     color: #f0f6fc;
-    margin-bottom: 12px;
+    margin-bottom: 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .list {
@@ -23,12 +25,34 @@
 }
 
 .item {
-    font-size: 0.8rem;
-    color: #8b949e;
-    line-height: 1.6;
-    margin-bottom: 10px;
+    font-size: 0.85rem;
+    color: #c9d1d9;
+    line-height: 1.7;
+    margin-bottom: 12px;
     display: flex;
-    gap: 8px;
+    gap: 12px;
+    animation: fadeInSlide 0.5s ease forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.item:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.item:nth-child(3) {
+    animation-delay: 0.2s;
 }
 
 .item:last-child {
@@ -37,12 +61,14 @@
 
 .bullet {
     color: #58a6ff;
-    font-weight: bold;
+    font-weight: 900;
+    text-shadow: 0 0 8px rgba(88, 166, 255, 0.6);
 }
 
 .loading {
-    padding: 20px;
+    padding: 30px;
     text-align: center;
-    color: #484f58;
-    font-size: 0.8rem;
+    color: #8b949e;
+    font-size: 0.85rem;
+    font-style: italic;
 }
