@@ -229,18 +229,30 @@ export function ChartPanel() {
                 const close = parseFloat(k.c)
                 const vol = parseFloat(k.v)
 
-                const newCandle = { time: t, open, high, low, close }
-                candleSerRef.current?.update(newCandle)
-                volSerRef.current?.update({
-                    time: t, value: vol,
-                    color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
-                })
-
                 const candles = candlesRef.current
+                // 안전장치: 캔들 데이터가 없거나, 새 데이터가 과거 데이터면 무시
+                if (candles.length > 0) {
+                    const lastTime = candles[candles.length - 1].time
+                    if (t < lastTime) return
+                }
+
+                const newCandle = { time: t, open, high, low, close }
+
+                // 현재 봉 업데이트 vs 새 봉 추가
                 if (candles.length > 0 && candles[candles.length - 1].time === t) {
                     candles[candles.length - 1] = newCandle
+                    candleSerRef.current?.update(newCandle)
+                    volSerRef.current?.update({
+                        time: t, value: vol,
+                        color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
+                    })
                 } else {
                     candles.push(newCandle)
+                    candleSerRef.current?.update(newCandle)
+                    volSerRef.current?.update({
+                        time: t, value: vol,
+                        color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
+                    })
                     if (candles.length > 600) candles.shift()
                 }
 
