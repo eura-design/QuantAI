@@ -5,12 +5,13 @@
     width: 25%;
     min-width: 320px;
     max-width: 480px;
+    height: 100%;
     border-left: 1px solid #1e2d45;
     background: #0d1117;
     overflow: hidden;
 }
 
-/* 기존 ReportPanel 스타일 덮어쓰기 (너비 제한 해제) */
+/* 내부 컴포넌트들의 높이 배분 */
 .right-sidebar>div {
     width: 100% !important;
     max-width: none !important;
@@ -18,5 +19,22 @@
     border-left: none !important;
 }
 
-/* 높이 배분: 리포트(자동), 공포지수(자동), 채팅(나머지 꽉 채우기) */
-/* ChatPanel은 이미 flex: 1 설정되어 있음 */
+/* 리포트와 채팅이 남은 공간을 나눠 갖도록 함 */
+/* min-height: 0은 flex 자식이 부모를 뚫고 나가는 것을 방지합니다 */
+.right-sidebar>div:nth-of-type(1) {
+    flex: 1.2;
+    min-height: 0;
+}
+
+.right-sidebar>div:nth-of-type(2) {
+    flex: 0 0 auto;
+}
+
+.right-sidebar>div:nth-of-type(3) {
+    flex: 0 0 auto;
+}
+
+.right-sidebar>div:nth-of-type(4) {
+    flex: 1;
+    min-height: 0;
+}
