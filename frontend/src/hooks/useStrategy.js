@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
+import { API } from '../config'
 
-const API_URL = 'https://quantai-production.up.railway.app/api/strategy'
+const API_URL = API.STRATEGY
 
 export function useStrategy() {
     const [data, setData] = useState(null)

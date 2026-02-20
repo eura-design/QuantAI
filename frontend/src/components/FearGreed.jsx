@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import styles from './FearGreed.module.css'
+import { API } from '../config'
 
-const API_URL = 'https://quantai-production.up.railway.app/api/fear_greed'
+const API_URL = API.FEAR_GREED
 
 export function FearGreed() {
     const [data, setData] = useState({ value: '50', value_classification: 'Neutral' })

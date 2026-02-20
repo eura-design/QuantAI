@@ -5,10 +5,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from analyzer import get_ai_strategy
 from typing import List
 import requests
+import sqlite3
 from pydantic import BaseModel
 
-# --- [ 채팅 데이터 (메모리) ] ---
-chat_history = [] 
+# --- [ DB 설정 ] ---
+DB_NAME = "chat.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS messages
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  sender TEXT,
+                  text TEXT,
+                  timestamp TEXT)''')
+    conn.commit()
+    conn.close()
 
 class ChatMessage(BaseModel):
     sender: str
@@ -18,8 +30,12 @@ class ChatMessage(BaseModel):
 app = FastAPI(
     title="QuantAI API",
     description="BTC/USDT 실시간 AI 분석 백엔드 & 채팅",
-    version="1.2.0"
+    version="1.3.0"
 )
+
+@app.on_event("startup")
+def startup_event():
+    init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -106,16 +122,92 @@ def get_fear_greed():
         print(f"Fear/Greed Error: {e}")
         return {"value": "50", "value_classification": "Neutral"}
 
-# --- [ 채팅 API (HTTP Polling) ] ---
+import asyncio
+from sse_starlette.sse import EventSourceResponse
+
+# ... (기존 DB 코드 유지)
+
+# SSE 클라이언트 관리 (메모리 큐)
+clients = set()
+
 @app.get("/api/chat/messages")
 def get_messages():
-    return chat_history
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT sender, text, timestamp FROM messages ORDER BY id DESC LIMIT 50")
+    rows = c.fetchall()
+    conn.close()
+    messages = [dict(row) for row in rows]
+    return messages[::-1]
+
+@app.get("/api/chat/stream")
+async def message_stream(request: requests.Request):
+    async def event_generator():
+        q = asyncio.Queue()
+        clients.add(q)
+        try:
+            while True:
+                # 연결 끊김 감지
+                if await request.is_disconnected():
+                    break
+                # 큐에서 데이터 기다리기 (무한 대기 아님, 타임오류 방지)
+                try:
+                    data = await asyncio.wait_for(q.get(), timeout=1.0)
+                    yield {"data": data} # SSE 포맷
+                except asyncio.TimeoutError:
+                    # 1초마다 ping (연결 유지용)
+                    yield {"event": "ping", "data": ""}
+        except Exception:
+            pass
+        finally:
+            clients.remove(q)
+
+    return EventSourceResponse(event_generator())
+
+# Rate Limit (IP별 도배 방지)
+# {ip: {"tokens": 5, "last_update": time}}
+rate_limits = {}
+
+from fastapi import Request
 
 @app.post("/api/chat/send")
-def send_message(msg: ChatMessage):
-    chat_history.append(msg.dict())
-    if len(chat_history) > 50:
-        chat_history.pop(0)
+async def send_message(msg: ChatMessage, request: Request):
+    client_ip = request.client.host
+    now = datetime.now().timestamp()
+    
+    # 0. Rate Limit 체크
+    if client_ip not in rate_limits:
+        rate_limits[client_ip] = {"tokens": 5, "last_update": now}
+    
+    user_limit = rate_limits[client_ip]
+    
+    # 토큰 충전 (10초에 1개)
+    elapsed = now - user_limit["last_update"]
+    new_tokens = int(elapsed / 10)
+    if new_tokens > 0:
+        user_limit["tokens"] = min(5, user_limit["tokens"] + new_tokens)
+        user_limit["last_update"] = now
+        
+    # 토큰 차감
+    if user_limit["tokens"] > 0:
+        user_limit["tokens"] -= 1
+    else:
+        raise HTTPException(status_code=429, detail="Too many messages. Please wait.")
+
+    # 1. DB 저장
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("INSERT INTO messages (sender, text, timestamp) VALUES (?, ?, ?)",
+              (msg.sender, msg.text, msg.timestamp))
+    conn.commit()
+    conn.close()
+    
+    # 2. 실시간 전파 (모든 클라이언트에게)
+    msg_json = msg.json()
+    for q in list(clients):
+        await q.put(msg_json)
+        
     return {"status": "ok"}
 
 

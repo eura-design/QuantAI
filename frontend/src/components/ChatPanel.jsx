@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './ChatPanel.module.css'
+import { API } from '../config'
 
-// 무조건 배포 주소 사용 (하드코딩)
-const MSG_URL = 'https://quantai-production.up.railway.app/api/chat/messages'
-const SEND_URL = 'https://quantai-production.up.railway.app/api/chat/send'
+const SEND_URL = API.CHAT_SEND
 
 export function ChatPanel() {
     const [messages, setMessages] = useState([])
@@ -11,24 +10,33 @@ export function ChatPanel() {
     const [myId] = useState('개미 ' + Math.floor(Math.random() * 1000))
     const messagesEndRef = useRef(null)
 
-    // 1초마다 메시지 가져오기 (Polling)
+    // SSE 실시간 연결 (서버 부하 감소, 반응 속도 향상)
     useEffect(() => {
-        const fetchMessages = () => {
-            fetch(MSG_URL)
-                .then(r => r.json())
-                .then(data => {
-                    // 데이터가 배열인지 확인
-                    if (Array.isArray(data)) {
-                        setMessages(data)
-                    }
-                })
-                .catch(e => console.error("Chat polling error:", e))
+        // 1. 초기 데이터 로딩 (최근 50개)
+        fetch(API.CHAT_MESSAGES)
+            .then(res => res.json())
+            .then(data => setMessages(data))
+            .catch(err => console.error("Initial Load Error:", err))
+
+        // 2. 실시간 스트림 연결
+        const eventSource = new EventSource(API.CHAT_STREAM)
+
+        eventSource.onmessage = (e) => {
+            try {
+                const newMsg = JSON.parse(e.data)
+                setMessages(prev => [...prev.slice(-49), newMsg]) // 최신 50개 유지
+            } catch (err) {
+                // ping 메시지 등은 무시
+            }
         }
 
-        fetchMessages() // 즉시 실행
-        const timer = setInterval(fetchMessages, 1000) // 1초 반복
+        eventSource.onerror = (e) => {
+            eventSource.close() // 에러 시 닫고 재연결 시도 (React가 리렌더링하며 재연결됨)
+        }
 
-        return () => clearInterval(timer)
+        return () => {
+            eventSource.close()
+        }
     }, [])
 
     useEffect(() => {
@@ -52,10 +60,7 @@ export function ChatPanel() {
                 body: JSON.stringify(msg)
             })
             setInput('')
-            // 전송 직후 바로 리스트 갱신
-            const r = await fetch(MSG_URL)
-            const data = await r.json()
-            if (Array.isArray(data)) setMessages(data)
+            // SSE가 자동으로 업데이트하므로 수동 fetch 불필요
         } catch (err) {
             console.error("Send failed:", err)
         }
