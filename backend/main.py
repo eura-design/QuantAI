@@ -95,7 +95,16 @@ async def strategy():
         # 3. 새로운 데이터 요청
         result = get_ai_strategy()
         
-        # 4. DB에 저장
+        # [중요] AI 분석 실패(에러)시 DB를 오염시키지 않음
+        if result['strategy'].startswith("AI 분석 오류"):
+            print(f"Update failed: {result['strategy']}")
+            if row:
+                # 429 에러 발생 시, 유효기간이 지났더라도 과거 데이터를 보여줌 (서비스 유지)
+                return dict(row)
+            else:
+                return result # 초기 데이터도 없으면 에러 표시
+
+        # 4. 성공 시에만 DB에 저장
         conn = sqlite3.connect(DB_NAME)
         c = conn.cursor()
         c.execute('''INSERT INTO strategy_history 
@@ -110,7 +119,7 @@ async def strategy():
         
     except Exception as e:
         print(f"Error fetching strategy: {e}")
-        # 에러 발생 시 과거 데이터라도 반환
+        # 코드 실행 중 에러 발생 시 과거 데이터라도 반환
         if row:
             return dict(row)
             
