@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import styles from './ChatPanel.module.css'
 
-const WS_URL = import.meta.env.PROD
-    ? 'wss://quantai-production.up.railway.app/ws/chat'
-    : 'ws://localhost:8001/ws/chat'
+// 하드코딩 (무조건 배포 주소 사용)
+const WS_URL = 'wss://quantai-production.up.railway.app/ws/chat'
 
 export function ChatPanel() {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [myId] = useState('개미 ' + Math.floor(Math.random() * 1000))
     const [isConnected, setIsConnected] = useState(false)
+    const [lastError, setLastError] = useState(null)
     const wsRef = useRef(null)
     const messagesEndRef = useRef(null)
 
@@ -98,6 +98,14 @@ export function ChatPanel() {
                         </div>
                     </div>
                 ))}
+
+                {!isConnected && (
+                    <div style={{ fontSize: '0.6rem', color: '#ef5350', padding: '10px', textAlign: 'center', background: 'rgba(239,83,80,0.1)', borderRadius: '4px', margin: '10px 0' }}>
+                        <div>상태: {lastError || '연결 시도 중...'}</div>
+                        <div style={{ marginTop: '4px', opacity: 0.7 }}>Target: {WS_URL}</div>
+                    </div>
+                )}
+
                 <div ref={messagesEndRef} />
             </div>
 
