@@ -238,22 +238,27 @@ export function ChartPanel() {
 
                 const newCandle = { time: t, open, high, low, close }
 
-                // 현재 봉 업데이트 vs 새 봉 추가
-                if (candles.length > 0 && candles[candles.length - 1].time === t) {
-                    candles[candles.length - 1] = newCandle
-                    candleSerRef.current?.update(newCandle)
-                    volSerRef.current?.update({
-                        time: t, value: vol,
-                        color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
-                    })
-                } else {
-                    candles.push(newCandle)
-                    candleSerRef.current?.update(newCandle)
-                    volSerRef.current?.update({
-                        time: t, value: vol,
-                        color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
-                    })
-                    if (candles.length > 600) candles.shift()
+                try {
+                    // 현재 봉 업데이트 vs 새 봉 추가
+                    if (candles.length > 0 && candles[candles.length - 1].time === t) {
+                        candles[candles.length - 1] = newCandle
+                        candleSerRef.current?.update(newCandle)
+                        volSerRef.current?.update({
+                            time: t, value: vol,
+                            color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
+                        })
+                    } else {
+                        candles.push(newCandle)
+                        candleSerRef.current?.update(newCandle)
+                        volSerRef.current?.update({
+                            time: t, value: vol,
+                            color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
+                        })
+                        if (candles.length > 600) candles.shift()
+                    }
+                } catch (err) {
+                    // 순서 꼬임 등 차트 에러 무시
+                    // console.warn(err) 
                 }
 
                 updateEma()
