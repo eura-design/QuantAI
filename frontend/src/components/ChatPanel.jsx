@@ -1,13 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
-import styles from './ChatPanel.module.css'
-
-const BASE_URL = import.meta.env.VITE_API_URL
-    ? import.meta.env.VITE_API_URL.split('/api')[0]
-    : 'http://localhost:8001'
-
-// HTTP Polling 방식
-const MSG_URL = `${BASE_URL}/api/chat/messages`
-const SEND_URL = `${BASE_URL}/api/chat/send`
+// 무조건 배포 주소 사용 (하드코딩)
+const MSG_URL = 'https://quantai-production.up.railway.app/api/chat/messages'
+const SEND_URL = 'https://quantai-production.up.railway.app/api/chat/send'
 
 export function ChatPanel() {
     const [messages, setMessages] = useState([])

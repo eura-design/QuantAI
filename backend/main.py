@@ -1,15 +1,24 @@
 import uvicorn
 from datetime import datetime, timedelta
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer import get_ai_strategy
 from typing import List
 import requests
+from pydantic import BaseModel
+
+# --- [ 채팅 데이터 (메모리) ] ---
+chat_history = [] 
+
+class ChatMessage(BaseModel):
+    sender: str
+    text: str
+    timestamp: str
 
 app = FastAPI(
     title="QuantAI API",
     description="BTC/USDT 실시간 AI 분석 백엔드 & 채팅",
-    version="1.1.0"
+    version="1.2.0"
 )
 
 app.add_middleware(
@@ -19,17 +28,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-from pydantic import BaseModel
-
-# --- [ 채팅 데이터 관리 (메모리) ] ---
-chat_history = []  # [{sender, text, timestamp}, ...]
-
-class ChatMessage(BaseModel):
-    sender: str
-    text: str
-    timestamp: str
-
 
 @app.get("/")
 def read_root():
