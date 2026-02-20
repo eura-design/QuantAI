@@ -23,7 +23,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://quant-ai-analyst.vercel.app",
+        "*"  # 최후의 수단 (모두 허용)
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
