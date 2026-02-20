@@ -4,12 +4,15 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
-from analyzer import get_ai_strategy, fetch_crypto_news, get_economic_events
+from analyzer import get_ai_strategy, fetch_crypto_news, get_economic_events, fetch_long_short_ratio, fetch_ai_daily_brief
 from contextlib import contextmanager
 
 DB_NAME = "quant_v2.db"
 clients = set()
 rate_limits = {}
+
+# 투표 데이터 (메모리 저장)
+votes = {"bull": 0, "bear": 0, "total": 0}
 
 @contextmanager
 def get_db():
@@ -28,14 +31,15 @@ def init_db():
 class ChatMessage(BaseModel):
     sender: str; text: str; timestamp: str
 
-app = FastAPI(title="QuantAI API", version="1.5.1")
+class VoteRequest(BaseModel):
+    side: str
+
+app = FastAPI(title="QuantAI API", version="1.6.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 @app.on_event("startup")
 def startup(): 
     init_db()
-
-
 
 @app.get("/api/strategy")
 def strategy():
@@ -60,6 +64,22 @@ def fear_greed():
         return res['data'][0]
     except: return {"value": "50", "value_classification": "Neutral"}
 
+@app.get("/api/sentiment")
+def get_sentiment():
+    ls = fetch_long_short_ratio()
+    return {"binance": ls, "votes": votes}
+
+@app.post("/api/vote")
+def post_vote(req: VoteRequest):
+    if req.side == "bull": votes["bull"] += 1
+    else: votes["bear"] += 1
+    votes["total"] += 1
+    return votes
+
+@app.get("/api/daily_brief")
+def get_brief():
+    return fetch_ai_daily_brief()
+
 @app.get("/api/news")
 def get_news():
     return fetch_crypto_news()
@@ -71,7 +91,6 @@ def get_events():
 @app.get("/api/chat/stream")
 async def chat_stream(request: Request):
     async def event_generator():
-        # 사용자가 데이터를 못 받을 경우를 대비해 큐 크기를 20개로 제한 (메모리 누수 방지)
         q = asyncio.Queue(maxsize=20); clients.add(q)
         try:
             with get_db() as conn:
@@ -86,8 +105,6 @@ async def chat_stream(request: Request):
                     yield {"comment": "hb"}
         finally: clients.remove(q)
     return EventSourceResponse(event_generator())
-
-
 
 @app.post("/api/chat/send")
 async def send_message(msg: ChatMessage, request: Request):

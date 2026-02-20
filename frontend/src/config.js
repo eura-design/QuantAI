@@ -16,6 +16,9 @@ export const API = {
     CHAT_SEND: `${BASE_URL}/api/chat/send`,
     CHAT_STREAM: `${BASE_URL}/api/chat/stream`,
     NEWS: `${BASE_URL}/api/news`,
+    DAILY_BRIEF: `${BASE_URL}/api/daily_brief`,
+    SENTIMENT: `${BASE_URL}/api/sentiment`,
+    VOTE: `${BASE_URL}/api/vote`,
     EVENTS: `${BASE_URL}/api/events`,
     HEALTH: `${BASE_URL}/api/health`
 };

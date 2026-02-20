@@ -5,6 +5,9 @@ import { ReportPanel } from './components/ReportPanel'
 import { FearGreed } from './components/FearGreed'
 import { EventCalendar } from './components/EventCalendar'
 import { ChatPanel } from './components/ChatPanel'
+import { SentimentPanel } from './components/SentimentPanel'
+import { DailyBriefing } from './components/DailyBriefing'
+import { BullBearVote } from './components/BullBearVote'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
 import { API } from './config'
@@ -148,23 +151,35 @@ function App() {
 
         <div className="sidebar-column">
           <ErrorBoundary>
+            <DailyBriefing />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
             <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
           </ErrorBoundary>
 
-          {/* 🐋 독립적인 컴포넌트로 에러 방지 */}
           <ErrorBoundary>
             <BigWhaleMonitor />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <FearGreed />
           </ErrorBoundary>
         </div>
 
         <div className="sidebar-column">
           <ErrorBoundary>
+            <SentimentPanel />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
+            <BullBearVote />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
+            <FearGreed />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
             <EventCalendar />
           </ErrorBoundary>
+
           <ErrorBoundary>
             <ChatPanel />
           </ErrorBoundary>

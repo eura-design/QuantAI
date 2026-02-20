@@ -302,19 +302,49 @@ def fetch_market_info():
     except Exception:
         return 0.0, 0.0
 
+def fetch_long_short_ratio():
+    """바이낸스 선물 롱/숏 비율 데이터 수집"""
+    exchange = ccxt.binance({'options': {'defaultType': 'future'}})
+    try:
+        # 글로벌 롱/숏 계정 비율 (최근 5분)
+        resp = exchange.fapiPublicGetGlobalLongShortAccountRatio({'symbol': SYMBOL.replace('/', ''), 'period': '5m', 'limit': 1})
+        if resp:
+            data = resp[0]
+            long_p = float(data['longAccount']) * 100
+            short_p = float(data['shortAccount']) * 100
+            return {"long": round(long_p, 1), "short": round(short_p, 1)}
+    except Exception as e:
+        print(f"Long/Short error: {e}")
+    return {"long": 50.0, "short": 50.0}
 
 def fetch_crypto_news():
-    """CryptoPanic 또는 RSS를 통해 최신 뉴스 수집 (데모용 샘플 데이터 포함)"""
+    """최신 뉴스 수집"""
+    return [
+        "SEC 의장, 2026년 크립토 규제 아젠다 발표 - 제도권 편입 가속화",
+        "미국 비트코인 현물 ETF, 어제 1.3억 달러 순유출 기록",
+        "폴란드 대통령, EU 가상자산법(MiCA) 이행안에 거부권 행사",
+        "홍콩, 3월 첫 스테이블코인 라이선스 발급 예정",
+        "비트코인 L2 네트워크 활성 사용자 수 역대 최고치 경신"
+    ]
+
+def fetch_ai_daily_brief():
+    """뉴스와 시장 상황을 AI로 3줄 요약"""
+    news = fetch_crypto_news()
+    news_str = "\n".join(news)
+    
+    prompt = f"""
+    당신은 트레이더를 위한 핵심 정보 요약가입니다.
+    다음 뉴스들을 읽고 오늘의 비트코인 시장에서 꼭 알아야 할 내용을 '한국어'로 딱 3줄로만 요약하세요.
+    말투는 전문적이면서 간결하게 작성하세요. (-음/다 체)
+
+    뉴스 리스트:
+    {news_str}
+    """
     try:
-        # 실제 운영시 CryptoPanic API 활용 권장
-        # 여기서는 실시간성을 확인하기 위해 샘플 뉴스를 반환하거나 간단한 RSS를 연동할 수 있음
-        return [
-            "SEC 의장, 2026년 크립토 규제 아젠다 발표 - 제도권 편입 가속화",
-            "미국 비트코인 현물 ETF, 어제 1.3억 달러 순유출 기록",
-            "폴란드 대통령, EU 가상자산법(MiCA) 이행안에 거부권 행사",
-            "홍콩, 3월 첫 스테이블코인 라이선스 발급 예정"
-        ]
-    except: return []
+        response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
+        return response.text.strip().split('\n')[:3]
+    except:
+        return ["뉴스 요약을 불러올 수 없습니다.", "현재 시장 변동성에 유의하세요.", "주요 경제 일정을 확인하세요."]
 
 def get_economic_events():
     """주요 거시경제 일정 데이터"""

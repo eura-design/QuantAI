@@ -1,0 +1,82 @@
+.container {
+    background: #0d1117;
+    border: 1px solid #1e2d45;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.header {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 15px;
+}
+
+.gaugeContainer {
+    margin-bottom: 20px;
+}
+
+.labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.longLabel {
+    color: #26a69a;
+}
+
+.shortLabel {
+    color: #ef5350;
+}
+
+.barBackground {
+    height: 12px;
+    background: #ef5350;
+    /* 기본적으로 숏 배경 */
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.longBar {
+    height: 100%;
+    background: #26a69a;
+    transition: width 0.5s ease;
+}
+
+.voteStatus {
+    border-top: 1px dashed #1e2d45;
+    padding-top: 12px;
+}
+
+.voteTitle {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+
+.voteStats {
+    display: flex;
+    gap: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.bullText {
+    color: #26a69a;
+}
+
+.bearText {
+    color: #ef5350;
+}
+
+.loading {
+    padding: 20px;
+    text-align: center;
+    color: #475569;
+    font-size: 0.8rem;
+}
