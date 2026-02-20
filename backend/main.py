@@ -71,7 +71,7 @@ async def health():
 CACHE_DURATION_MINUTES = 15
 
 @app.get("/api/strategy")
-async def strategy():
+def strategy():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
