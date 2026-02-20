@@ -19,7 +19,8 @@ function App() {
           <ChartPanel />
         </ErrorBoundary>
 
-        <div className="right-sidebar">
+        {/* 제1 사이드바: 분석 및 심리 */}
+        <div className="sidebar-column">
           <ErrorBoundary>
             <ReportPanel
               data={data}
@@ -32,7 +33,10 @@ function App() {
           <ErrorBoundary>
             <FearGreed />
           </ErrorBoundary>
+        </div>
 
+        {/* 제2 사이드바: 일정 및 채팅 */}
+        <div className="sidebar-column">
           <ErrorBoundary>
             <EventCalendar />
           </ErrorBoundary>

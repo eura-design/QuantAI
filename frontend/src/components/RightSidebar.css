@@ -1,40 +1,51 @@
-/* 오른쪽 사이드바 컨테이너 */
-.right-sidebar {
+/* 사이드바 공통 열 스타일 */
+.sidebar-column {
     display: flex;
     flex-direction: column;
-    width: 25%;
-    min-width: 320px;
-    max-width: 480px;
+    width: 20%;
+    min-width: 300px;
+    max-width: 400px;
     height: 100%;
     border-left: 1px solid #1e2d45;
     background: #0d1117;
     overflow: hidden;
 }
 
-/* 내부 컴포넌트들의 높이 배분 */
-.right-sidebar>div {
+/* 내부 컴포넌트 너비 강제 조정 */
+.sidebar-column>div {
     width: 100% !important;
     max-width: none !important;
     border-right: none !important;
     border-left: none !important;
 }
 
-/* 리포트와 채팅이 남은 공간을 나눠 갖도록 함 */
-/* min-height: 0은 flex 자식이 부모를 뚫고 나가는 것을 방지합니다 */
-.right-sidebar>div:nth-of-type(1) {
-    flex: 1.2;
-    min-height: 0;
-}
-
-.right-sidebar>div:nth-of-type(2) {
-    flex: 0 0 auto;
-}
-
-.right-sidebar>div:nth-of-type(3) {
-    flex: 0 0 auto;
-}
-
-.right-sidebar>div:nth-of-type(4) {
+/* 첫 번째 사이드바 배분: 리포트(자동 확장), 지수(고정) */
+.sidebar-column:nth-of-type(2)>div:nth-child(1) {
     flex: 1;
     min-height: 0;
+}
+
+.sidebar-column:nth-of-type(2)>div:nth-child(2) {
+    flex: 0 0 auto;
+}
+
+/* 두 번째 사이드바 배분: 일정(고정), 채팅(나머지 꽉 채우기) */
+.sidebar-column:nth-of-type(3)>div:nth-child(1) {
+    flex: 0 0 auto;
+}
+
+.sidebar-column:nth-of-type(3)>div:nth-child(2) {
+    flex: 1;
+    min-height: 0;
+}
+
+/* 모바일/태블릿 대응: 화면이 좁아지면 아래로 쌓임 */
+@media (max-width: 1200px) {
+    .sidebar-column {
+        width: 100%;
+        max-width: none;
+        height: auto;
+        border-left: none;
+        border-top: 1px solid #1e2d45;
+    }
 }
