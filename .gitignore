@@ -16,3 +16,7 @@ dist/
 
 # Local logs
 *.log
+
+# Database & Cache
+*.db
+brief_cache.json

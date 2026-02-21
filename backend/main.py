@@ -14,6 +14,11 @@ rate_limits = {}
 # 투표 데이터 (메모리 저장)
 votes = {"bull": 0, "bear": 0, "total": 0}
 
+# 캐시 데이터 (메모리 저장)
+fng_cache = {"data": None, "expiry": None}
+ls_cache = {"data": None, "expiry": None}
+trade_stats_cache = {"data": None, "needs_update": True}
+
 @contextmanager
 def get_db():
     conn = sqlite3.connect(DB_NAME)
@@ -26,6 +31,17 @@ def init_db():
         c = conn.cursor()
         c.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, text TEXT, timestamp TEXT)")
         c.execute("CREATE TABLE IF NOT EXISTS strategy_history (id INTEGER PRIMARY KEY AUTOINCREMENT, price REAL, strategy TEXT, generated_at TEXT, funding_rate REAL, open_interest REAL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+        # 가상 매매 테이블
+        c.execute('''CREATE TABLE IF NOT EXISTS virtual_trades (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            side TEXT,
+            entry REAL,
+            tp REAL,
+            sl REAL,
+            status TEXT DEFAULT 'OPEN',
+            close_price REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
         conn.commit()
 
 class ChatMessage(BaseModel):
@@ -41,6 +57,54 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 async def startup(): 
     init_db()
     asyncio.create_task(reset_votes_periodically())
+    asyncio.create_task(monitor_trades())
+
+async def monitor_trades():
+    """가상 매매 실시간 감시 및 처리"""
+    import ccxt
+    exchange = ccxt.binance({'options': {'defaultType': 'future'}})
+    symbol = "BTC/USDT"
+    
+    while True:
+        try:
+            # 1. 현재가 가져오기
+            ticker = exchange.fetch_ticker(symbol)
+            curr_price = float(ticker['last'])
+            
+            # 2. OPEN 상태인 매매 가져오기
+            with get_db() as conn:
+                conn.row_factory = sqlite3.Row
+                c = conn.cursor()
+                c.execute("SELECT * FROM virtual_trades WHERE status='OPEN'")
+                open_trades = c.fetchall()
+                
+                for trade in open_trades:
+                    t_id = trade['id']
+                    side = trade['side']
+                    tp = trade['tp']
+                    sl = trade['sl']
+                    
+                    status = None
+                    if side == 'LONG':
+                        if curr_price >= tp: status = 'WIN'
+                        elif curr_price <= sl: status = 'LOSS'
+                    elif side == 'SHORT':
+                        if curr_price <= tp: status = 'WIN'
+                        elif curr_price >= sl: status = 'LOSS'
+                        
+                    if status:
+                        conn.execute(
+                            "UPDATE virtual_trades SET status=?, close_price=? WHERE id=?",
+                            (status, curr_price, t_id)
+                        )
+                        trade_stats_cache["needs_update"] = True  # 통계 갱신 필요함
+                        print(f"[TRADE] Closed #{t_id} as {status} at {curr_price}")
+                conn.commit()
+                
+        except Exception as e:
+            print(f"[MONITOR ERROR] {e}")
+            
+        await asyncio.sleep(30) # 30초마다 체크
 
 async def reset_votes_periodically():
     """4시간마다 투표 초기화 (00, 04, 08, 12, 16, 20시)"""
@@ -54,8 +118,31 @@ async def reset_votes_periodically():
             last_period = curr_period
             print(f"[{datetime.now()}] 투표 데이터가 새 세션을 위해 초기화되었습니다.")
 
+@app.get("/api/trades/stats")
+async def get_trade_stats():
+    """가상 매매 통계 및 최근 기록 조회 (캐시 적용)"""
+    if not trade_stats_cache["needs_update"] and trade_stats_cache["data"]:
+        return trade_stats_cache["data"]
+
+    with get_db() as conn:
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM virtual_trades WHERE status='WIN'")
+        wins = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM virtual_trades WHERE status='LOSS'")
+        losses = c.fetchone()[0]
+        c.execute("SELECT * FROM virtual_trades ORDER BY id DESC LIMIT 10")
+        history = [dict(row) for row in c.fetchall()]
+        
+        total = wins + losses
+        win_rate = (wins / total * 100) if total > 0 else 0
+        data = {"wins": wins, "losses": losses, "win_rate": round(win_rate, 1), "history": history}
+        
+        trade_stats_cache["data"] = data
+        trade_stats_cache["needs_update"] = False
+        return data
+
 @app.get("/api/strategy")
-def strategy():
+async def strategy():
     with get_db() as conn:
         row = conn.execute("SELECT * FROM strategy_history ORDER BY id DESC LIMIT 1").fetchone()
         if row and datetime.now() - datetime.strptime(row['generated_at'], "%Y-%m-%d %H:%M:%S") < timedelta(minutes=15):
@@ -63,23 +150,60 @@ def strategy():
     try:
         res = get_ai_strategy()
         if not res['strategy'].startswith("AI 분석 오류"):
+            # 가상 매매 신호 추출 및 저장
+            try:
+                if "SIGNAL_JSON:" in res['strategy']:
+                    json_part = res['strategy'].split("SIGNAL_JSON:")[1].strip()
+                    # 마크다운 백틱 제거
+                    json_part = json_part.replace('```json', '').replace('```', '').strip()
+                    signal = json.loads(json_part)
+                    
+                    with get_db() as conn:
+                        conn.execute(
+                            "INSERT INTO virtual_trades (side, entry, tp, sl, status) VALUES (?, ?, ?, ?, 'OPEN')",
+                            (signal['side'], signal['entry'], signal['tp'], signal['sl'])
+                        )
+                        conn.commit()
+                        trade_stats_cache["needs_update"] = True  # 새로운 매매 발생 시 통계 캐시 무효화
+                        print(f"[TRADE] New trade opened: {signal}")
+            except Exception as e:
+                print(f"[ERROR] Signal extraction failed: {e}")
+
             with get_db() as conn:
                 conn.execute("INSERT INTO strategy_history (price, strategy, generated_at, funding_rate, open_interest) VALUES (?,?,?,?,?)",
                              (res['price'], res['strategy'], res['generated_at'], res['funding_rate'], res['open_interest']))
                 conn.commit()
         return res
-    except: return dict(row) if row else {"strategy": "⚠️ 데이터 수집 중..."}
+    except Exception as e:
+        print(f"[ERROR] Strategy fetch failed: {e}")
+        return dict(row) if row else {"strategy": "⚠️ 데이터 수집 중..."}
 
 @app.get("/api/fear_greed")
 def fear_greed():
+    """탐욕/공포 지수 조회 (4시간 캐시 적용)"""
+    now = datetime.now()
+    if fng_cache["data"] and fng_cache["expiry"] > now:
+        return fng_cache["data"]
+    
     try:
         res = requests.get("https://api.alternative.me/fng/").json()
-        return res['data'][0]
-    except: return {"value": "50", "value_classification": "Neutral"}
+        fng_cache["data"] = res['data'][0]
+        fng_cache["expiry"] = now + timedelta(hours=4)
+        return fng_cache["data"]
+    except: 
+        if fng_cache["data"]: return fng_cache["data"]
+        return {"value": "50", "value_classification": "Neutral"}
 
 @app.get("/api/sentiment")
 def get_sentiment():
+    """시장 심리 조회 (5분 캐시 적용)"""
+    now = datetime.now()
+    if ls_cache["data"] and ls_cache["expiry"] > now:
+        return {"binance": ls_cache["data"], "votes": votes}
+        
     ls = fetch_long_short_ratio()
+    ls_cache["data"] = ls
+    ls_cache["expiry"] = now + timedelta(minutes=5)
     return {"binance": ls, "votes": votes}
 
 @app.post("/api/vote")

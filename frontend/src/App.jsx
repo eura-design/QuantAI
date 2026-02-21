@@ -7,7 +7,7 @@ import { EventCalendar } from './components/EventCalendar'
 import { ChatPanel } from './components/ChatPanel'
 import { SentimentPanel } from './components/SentimentPanel'
 import { DailyBriefing } from './components/DailyBriefing'
-import { BullBearVote } from './components/BullBearVote'
+import { TradePerformance } from './components/TradePerformance'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
 import { API } from './config'
@@ -151,6 +151,10 @@ function App() {
 
         <div className="sidebar-column">
           <ErrorBoundary>
+            <TradePerformance />
+          </ErrorBoundary>
+
+          <ErrorBoundary>
             <DailyBriefing />
           </ErrorBoundary>
 
@@ -166,10 +170,6 @@ function App() {
         <div className="sidebar-column">
           <ErrorBoundary>
             <SentimentPanel />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <BullBearVote />
           </ErrorBoundary>
 
           <ErrorBoundary>

@@ -20,7 +20,8 @@ export const API = {
     SENTIMENT: `${BASE_URL}/api/sentiment`,
     VOTE: `${BASE_URL}/api/vote`,
     EVENTS: `${BASE_URL}/api/events`,
-    HEALTH: `${BASE_URL}/api/health`
+    HEALTH: `${BASE_URL}/api/health`,
+    TRADES_STATS: `${BASE_URL}/api/trades/stats`
 };
 
 export const CONFIG = {

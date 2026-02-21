@@ -1,112 +1,198 @@
 .container {
-    background: rgba(13, 17, 23, 0.8);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(30, 45, 69, 0.5);
-    border-radius: 16px;
+    background: rgba(13, 17, 23, 0.85);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
     padding: 20px;
     margin-bottom: 24px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-    position: relative;
-    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.container::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(38, 166, 154, 0.05) 0%, transparent 70%);
-    pointer-events: none;
+/* 투표 전 초기 화면 */
+.initialState {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.headerCompact {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.subTitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 20px;
+}
+
+.voteButtons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.bullBtnBig,
+.bearBtnBig {
+    flex: 1;
+    height: 48px;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bullBtnBig {
+    background: linear-gradient(135deg, #26a69a 0%, #00bfa5 100%);
+    box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
+}
+
+.bearBtnBig {
+    background: linear-gradient(135deg, #ef5350 0%, #d32f2f 100%);
+    box-shadow: 0 4px 15px rgba(239, 83, 80, 0.3);
+}
+
+.bullBtnBig:hover,
+.bearBtnBig:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+}
+
+.bullBtnBig:active,
+.bearBtnBig:active {
+    transform: translateY(1px);
+}
+
+.hintText {
+    font-size: 0.65rem;
+    color: #64748b;
+    margin: 0;
+}
+
+/* 투표 후 결과 화면 */
+.resultState {
+    animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .header {
     font-size: 1rem;
     font-weight: 800;
-    color: #f8fafc;
+    color: #ffffff;
     margin-bottom: 20px;
+    text-align: center;
+}
+
+.section {
+    margin-bottom: 16px;
+}
+
+.sectionHeader {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 10px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+.liveTag,
+.timerTag {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.liveTag {
+    color: #26a69a;
+    border: 1px solid rgba(38, 166, 154, 0.3);
 }
 
 .gaugeContainer {
-    margin-bottom: 20px;
+    margin-bottom: 4px;
 }
 
 .labels {
     display: flex;
     justify-content: space-between;
     font-size: 0.75rem;
-    font-weight: 600;
-    margin-bottom: 6px;
+    font-weight: 700;
+    margin-bottom: 4px;
 }
 
-.longLabel {
-    color: #26a69a;
-}
-
-.shortLabel {
-    color: #ef5350;
-}
-
-.barBackground {
-    height: 14px;
-    background: #ef5350;
-    border-radius: 7px;
-    overflow: hidden;
-    position: relative;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.longBar {
-    height: 100%;
-    background: linear-gradient(90deg, #26a69a 0%, #4db6ac 100%);
-    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 2px 0 10px rgba(38, 166, 154, 0.5);
-}
-
-.voteStatus {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(30, 45, 69, 0.5);
-}
-
-.voteTitle {
-    font-size: 0.75rem;
-    color: #8b949e;
-    margin-bottom: 8px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.resetInfo {
-    font-size: 0.65rem;
-    color: #484f58;
-    font-weight: normal;
-}
-
-.voteStats {
-    display: flex;
-    gap: 15px;
-    font-size: 0.8rem;
-    font-weight: 600;
-}
-
+.longLabel,
 .bullText {
     color: #26a69a;
 }
 
+.shortLabel,
 .bearText {
     color: #ef5350;
 }
 
-.loading {
-    padding: 20px;
-    text-align: center;
+.barBackground,
+.barBackgroundUser {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.longBar {
+    height: 100%;
+    background: linear-gradient(90deg, #26a69a 0%, #00bfa5 100%);
+    transition: width 1.2s ease;
+}
+
+.bullBar {
+    height: 100%;
+    background: linear-gradient(90deg, #58a6ff 0%, #2188ff 100%);
+    transition: width 1.2s ease;
+}
+
+.divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    margin: 16px 0;
+}
+
+.voteFooter {
+    text-align: right;
+    font-size: 0.65rem;
     color: #475569;
+    margin-top: 4px;
+}
+
+.loading {
+    padding: 30px;
+    text-align: center;
+    color: #64748b;
     font-size: 0.8rem;
 }
