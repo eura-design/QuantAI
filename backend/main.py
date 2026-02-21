@@ -1,30 +1,44 @@
-import uvicorn, sqlite3, requests, asyncio, json
+import asyncio
+import json
+import sqlite3
+from contextlib import contextmanager
 from datetime import datetime, timedelta
+
+import requests
+import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from sse_starlette.sse import EventSourceResponse
 from pydantic import BaseModel
-from analyzer import get_ai_strategy, fetch_crypto_news, get_economic_events, fetch_long_short_ratio, fetch_ai_daily_brief
-from contextlib import contextmanager
+from sse_starlette.sse import EventSourceResponse
 
+from analyzer import (
+    fetch_ai_daily_brief,
+    fetch_crypto_news,
+    fetch_long_short_ratio,
+    get_ai_strategy,
+    get_economic_events,
+)
+
+# 설정 및 캐시 데이터
 DB_NAME = "quant_v2.db"
+DB_TIMEOUT = 10.0
 clients = set()
 rate_limits = {}
 
-# 투표 데이터 (메모리 저장)
+# 투표 및 캐시 (메모리 저장)
 votes = {"bull": 0, "bear": 0, "total": 0}
-
-# 캐시 데이터 (메모리 저장)
 fng_cache = {"data": None, "expiry": None}
 ls_cache = {"data": None, "expiry": None}
 trade_stats_cache = {"data": None, "needs_update": True}
 
 @contextmanager
 def get_db():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB_NAME, timeout=DB_TIMEOUT)
     conn.row_factory = sqlite3.Row
-    try: yield conn
-    finally: conn.close()
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 def init_db():
     with get_db() as conn:
@@ -73,16 +87,16 @@ async def monitor_trades():
             
             # 2. OPEN 상태인 매매 가져오기
             with get_db() as conn:
-                conn.row_factory = sqlite3.Row
                 c = conn.cursor()
-                c.execute("SELECT * FROM virtual_trades WHERE status='OPEN'")
+                c.execute("SELECT id, side, tp, sl FROM virtual_trades WHERE status='OPEN'")
                 open_trades = c.fetchall()
                 
+                if not open_trades:
+                    await asyncio.sleep(10)
+                    continue
+
                 for trade in open_trades:
-                    t_id = trade['id']
-                    side = trade['side']
-                    tp = trade['tp']
-                    sl = trade['sl']
+                    t_id, side, tp, sl = trade['id'], trade['side'], trade['tp'], trade['sl']
                     
                     status = None
                     if side == 'LONG':
@@ -104,7 +118,7 @@ async def monitor_trades():
         except Exception as e:
             print(f"[MONITOR ERROR] {e}")
             
-        await asyncio.sleep(30) # 30초마다 체크
+        await asyncio.sleep(10) # 10초마다 체크
 
 async def reset_votes_periodically():
     """4시간마다 투표 초기화 (00, 04, 08, 12, 16, 20시)"""

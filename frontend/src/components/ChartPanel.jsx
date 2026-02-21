@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { createChart, CrosshairMode } from 'lightweight-charts'
 import styles from './ChartPanel.module.css'
-import { MiniChart } from './MiniChart'
 
-const BINANCE_REST = 'https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=500'
-const BINANCE_WS = 'wss://stream.binance.com:9443/ws/btcusdt@kline_5m'
+const BINANCE_REST = 'https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=5m&limit=500'
+const BINANCE_WS = 'wss://fstream.binance.com/ws/btcusdt@kline_5m'
 
 const COLORS = {
     bg: '#0d1117',
@@ -71,18 +70,28 @@ export function ChartPanel() {
     const wsRef = useRef(null)
     const timerRef = useRef(null)
 
+    const [timeframe, setTimeframe] = useState('5m')
     const [livePrice, setLivePrice] = useState(null)
     const [pctChange, setPctChange] = useState(null)
     const [ohlcv, setOhlcv] = useState({ o: '--', h: '--', l: '--', c: '--', v: '--' })
     const [lastUpdate, setLastUpdate] = useState('--')
     const prevPriceRef = useRef(null)
 
+    const timeframes = [
+        { id: '1m', label: '1분' },
+        { id: '5m', label: '5분' },
+        { id: '15m', label: '15분' },
+        { id: '1h', label: '1시간' },
+        { id: '4h', label: '4시간' },
+        { id: '1d', label: '1일' },
+    ]
+
     // ── 차트 생성 ─────────────────────────────────────
     useEffect(() => {
         if (!mainRef.current || !volRef.current) return
 
         const totalH = contRef.current.clientHeight
-        const mainH = Math.floor(totalH * 0.68)
+        const mainH = Math.floor(totalH * 0.75) // 비중 조절
         const volH = totalH - mainH
 
         // 메인 캔들 차트
@@ -178,7 +187,7 @@ export function ChartPanel() {
         const handler = () => {
             if (!chartRef.current || !volChartRef.current || !contRef.current) return
             const totalH = contRef.current.clientHeight
-            const mainH = Math.floor(totalH * 0.68)
+            const mainH = Math.floor(totalH * 0.75)
             const volH = totalH - mainH
             chartRef.current.resize(mainRef.current.clientWidth, mainH)
             volChartRef.current.resize(volRef.current.clientWidth, volH)
@@ -187,9 +196,12 @@ export function ChartPanel() {
         return () => window.removeEventListener('resize', handler)
     }, [])
 
-    // ── 데이터 로드 + WebSocket ───────────────────────
+    // ── 데이터 로드 + WebSocket (타임프레임 변경 대응) ─────
     useEffect(() => {
         if (!candleSerRef.current) return
+
+        const tfLabel = timeframes.find(t => t.id === timeframe)?.label || timeframe
+        window.dispatchEvent(new CustomEvent('timeframe-change', { detail: { timeframe, label: tfLabel } }))
 
         function dispatchWsStatus(text, live) {
             window.dispatchEvent(new CustomEvent('ws-status-change', { detail: { text, live } }))
@@ -206,24 +218,19 @@ export function ChartPanel() {
         function updateEma() {
             const data = candlesRef.current
             if (data.length === 0) return
-
-            // 전체 다시 계산 (과거 데이터 변경 가능성 대비)
             const e20 = calcEMA(data, 20)
             const e50 = calcEMA(data, 50)
-
-            // 데이터가 많으면 setData로 전체 덮어쓰기 (가장 확실함)
-            // 깜빡임 방지를 위해 마지막 1개만 update할 수도 있지만,
-            // EMA는 과거 데이터 영향으로 값이 변할 수 있어 setData가 안전
             ema20Ref.current?.setData(e20)
             ema50Ref.current?.setData(e50)
         }
 
         function connectWs() {
             if (wsRef.current) wsRef.current.close()
-            wsRef.current = new WebSocket(BINANCE_WS)
+            const wsUrl = `wss://stream.binance.com:9443/ws/btcusdt@kline_${timeframe}`
+            wsRef.current = new WebSocket(wsUrl)
 
             wsRef.current.onopen = () => {
-                dispatchWsStatus('LIVE · 실시간 연결됨', true)
+                dispatchWsStatus(`LIVE · BTC/USDT (${timeframe}) 연결됨`, true)
                 if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
             }
 
@@ -239,15 +246,12 @@ export function ChartPanel() {
                     const vol = parseFloat(k.v)
 
                     const candles = candlesRef.current
-                    // 안전장치: 캔들 데이터가 없거나, 새 데이터가 과거 데이터면 무시
                     if (candles.length > 0) {
                         const lastTime = candles[candles.length - 1].time
                         if (t < lastTime) return
                     }
 
                     const newCandle = { time: t, open, high, low, close }
-
-                    // 현재 봉 업데이트 vs 새 봉 추가
                     if (candles.length > 0 && candles[candles.length - 1].time === t) {
                         candles[candles.length - 1] = newCandle
                         candleSerRef.current?.update(newCandle)
@@ -262,19 +266,15 @@ export function ChartPanel() {
                             time: t, value: vol,
                             color: close >= open ? 'rgba(38,166,154,0.5)' : 'rgba(239,83,80,0.5)',
                         })
-                        if (candles.length > 600) candles.shift()
+                        if (candles.length > 1000) candles.shift()
                     }
 
                     updateEma()
                     updatePriceDisplay(close, open)
                     setOhlcv({ o: formatPrice(open), h: formatPrice(high), l: formatPrice(low), c: formatPrice(close), v: formatVol(vol) })
                     setLastUpdate(new Date().toTimeString().slice(0, 8))
-                } catch (err) {
-                    // ignored
-                }
+                } catch (err) { }
             }
-
-            wsRef.current.onerror = () => { }
 
             wsRef.current.onclose = () => {
                 dispatchWsStatus('연결 끊김 · 재연결 중...', false)
@@ -283,7 +283,8 @@ export function ChartPanel() {
         }
 
         // 초기 REST 데이터 로드
-        fetch(BINANCE_REST)
+        const restUrl = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${timeframe}&limit=500`
+        fetch(restUrl)
             .then(r => r.json())
             .then(raw => {
                 const candles = []
@@ -313,7 +314,6 @@ export function ChartPanel() {
                     updatePriceDisplay(last.close, last.open)
                     setOhlcv({ o: formatPrice(last.open), h: formatPrice(last.high), l: formatPrice(last.low), c: formatPrice(last.close), v: formatVol(volData[volData.length - 1].value) })
                 }
-
                 setTimeout(connectWs, 300)
             })
             .catch(() => {
@@ -324,7 +324,7 @@ export function ChartPanel() {
             wsRef.current?.close()
             if (timerRef.current) clearTimeout(timerRef.current)
         }
-    }, [])
+    }, [timeframe])
 
     const isUp = livePrice !== null && prevPriceRef.current !== null
         ? livePrice >= prevPriceRef.current
@@ -350,6 +350,19 @@ export function ChartPanel() {
                         </span>
                     )}
                 </div>
+
+                {/* 타임프레임 선택기 */}
+                <div className={styles.timeframeSelector}>
+                    {timeframes.map(tf => (
+                        <button
+                            key={tf.id}
+                            className={`${styles.tfButton} ${timeframe === tf.id ? styles.active : ''}`}
+                            onClick={() => setTimeframe(tf.id)}
+                        >
+                            {tf.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* 메인 차트 영역 */}
@@ -357,12 +370,6 @@ export function ChartPanel() {
                 <div className={styles.chartContainer} ref={contRef}>
                     <div className={styles.mainChart} ref={mainRef} />
                     <div className={styles.volChart} ref={volRef} />
-                </div>
-
-                {/* 보조 차트 (1시간, 1일) */}
-                <div className={styles.subCharts}>
-                    <MiniChart interval="1h" title="1시간봉 (1H)" />
-                    <MiniChart interval="1d" title="일봉 (1D)" />
                 </div>
             </div>
 

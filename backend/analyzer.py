@@ -1,20 +1,23 @@
 import os
 import sys
+import json
 import warnings
-import ccxt
-import pandas as pd
-import pandas_ta as ta
-import numpy as np
-from google import genai
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
-warnings.filterwarnings("ignore")
+import numpy as np
+import pandas as pd
+import pandas_ta as ta
+import ccxt
+from dotenv import load_dotenv
+from google import genai
 
-try:
-    sys.stdout.reconfigure(encoding='utf-8')
-except AttributeError:
-    pass
+# 경고 무시 및 인코딩 설정
+warnings.filterwarnings("ignore")
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except (AttributeError, Exception):
+        pass
 
 load_dotenv()
 

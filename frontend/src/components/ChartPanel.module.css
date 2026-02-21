@@ -43,34 +43,53 @@
 }
 
 .chartContainer {
-    flex: 2;
-    /* 메인 차트 비중 확대 */
+    flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
     min-height: 0;
 }
 
-.subCharts {
-    flex: 0.8;
-    /* 보조 차트 비중 */
-    display: flex;
-    gap: 12px;
-    padding: 12px;
-    background: #0d1117;
-    border-top: 1px solid #1e2d45;
-    min-height: 200px;
-}
-
 .mainChart {
     width: 100%;
-    height: 68%;
+    height: 75%;
 }
 
 .volChart {
     width: 100%;
-    height: 32%;
+    height: 25%;
     border-top: 1px solid #1e2d45;
+}
+
+.timeframeSelector {
+    display: flex;
+    gap: 4px;
+    background: #131c2e;
+    padding: 3px;
+    border-radius: 6px;
+}
+
+.tfButton {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tfButton:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tfButton.active {
+    background: #1e2d45;
+    color: #4facfe;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .infoBar {

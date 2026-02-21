@@ -6,13 +6,22 @@ export function Header() {
     const [wsStatus, setWsStatus] = useState('연결 중...')
     const [isLive, setIsLive] = useState(false)
 
+    const [interval, setInterval] = useState('5분봉')
+
     useEffect(() => {
-        const handler = (e) => {
+        const wsHandler = (e) => {
             setWsStatus(e.detail.text)
             setIsLive(e.detail.live)
         }
-        window.addEventListener('ws-status-change', handler)
-        return () => window.removeEventListener('ws-status-change', handler)
+        const tfHandler = (e) => {
+            setInterval(e.detail.label + '봉')
+        }
+        window.addEventListener('ws-status-change', wsHandler)
+        window.addEventListener('timeframe-change', tfHandler)
+        return () => {
+            window.removeEventListener('ws-status-change', wsHandler)
+            window.removeEventListener('timeframe-change', tfHandler)
+        }
     }, [])
 
     return (
@@ -29,7 +38,7 @@ export function Header() {
 
                 <div className={styles.center}>
                     <span className={styles.pair}>BTC / USDT</span>
-                    <span className={styles.interval}>5분봉</span>
+                    <span className={styles.interval}>{interval}</span>
                 </div>
 
                 <div className={`${styles.status} ${isLive ? styles.live : styles.offline}`}>
