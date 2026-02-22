@@ -12,7 +12,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
 import './App.css'
 
-// 🐋 실시간 고래 감시 컴포넌트 (높이 조절을 위해 별도 스타일 제거 및 Container화)
+// 🐋 실시간 고래 감시 컴포넌트
 function BigWhaleMonitor() {
   const [msgs, setMsgs] = useState([]);
   const [status, setStatus] = useState('Wait');
@@ -25,50 +25,30 @@ function BigWhaleMonitor() {
     const connect = () => {
       try {
         ws = new WebSocket(BINANCE_TRADE_WS);
-        ws.onopen = () => {
-          if (active) {
-            setStatus('ON');
-            window.dispatchEvent(new CustomEvent('ws-status-change', { detail: { text: 'LIVE · 고래 추적 중', live: true } }));
-          }
-        }
+        ws.onopen = () => { if (active) setStatus('ON'); }
         ws.onmessage = (e) => {
           if (!active) return;
           try {
             const m = JSON.parse(e.data);
             const amount = parseFloat(m.p) * parseFloat(m.q);
             if (amount >= 50000) {
-              let tier = "SHRIMP";
-              if (amount >= 500000) tier = "KRAKEN";
-              else if (amount >= 100000) tier = "WHALE";
-              else if (amount >= 30000) tier = "DOLPHIN";
-
               const alert = {
-                tier,
+                tier: amount >= 100000 ? "WHALE" : "DOLPHIN",
                 side: m.m ? "SELL" : "BUY",
                 amount: amount,
-                qty: parseFloat(m.q),
                 timestamp: new Date(m.T).toTimeString().slice(0, 8)
               };
-              setMsgs(p => [alert, ...p].slice(0, 30));
+              setMsgs(p => [alert, ...p].slice(0, 20));
             }
           } catch (err) { }
         }
         ws.onerror = () => { if (active) setStatus('OFF'); }
-        ws.onclose = () => {
-          if (active) {
-            setStatus('OFF');
-            window.dispatchEvent(new CustomEvent('ws-status-change', { detail: { text: '연결 끊김 · 재연결 중', live: false } }));
-            setTimeout(connect, 5000);
-          }
-        }
+        ws.onclose = () => { if (active) setTimeout(connect, 5000); }
       } catch (e) { }
     };
 
     connect();
-    return () => {
-      active = false;
-      if (ws) ws.close();
-    }
+    return () => { active = false; if (ws) ws.close(); }
   }, []);
 
   return (
@@ -77,36 +57,16 @@ function BigWhaleMonitor() {
       background: '#0d1117', border: '1px solid #1e2d45', borderRadius: '12px',
       overflow: 'hidden'
     }}>
-      <div style={{
-        padding: '10px 15px', background: '#131c2e',
-        borderBottom: '1px solid #1e2d45', display: 'flex',
-        justifyContent: 'space-between', alignItems: 'center'
-      }}>
-        <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 'bold' }}>🐋 실시간 고래 감시</span>
-        <span style={{ fontSize: '10px', color: status === 'ON' ? '#26a69a' : '#ef5350' }}>{status}</span>
-      </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
-        {msgs.length === 0 ? (
-          <div style={{ color: '#475569', textAlign: 'center', fontSize: '11px', padding: '20px 0' }}>대기 중...</div>
-        ) : (
+      <div style={{ padding: '8px 12px', background: '#131c2e', borderBottom: '1px solid #1e2d45', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>🐋 실시간 고래 감시</div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
+        {msgs.length === 0 ? <div style={{ color: '#475569', textAlign: 'center', fontSize: '10px', padding: '10px' }}>데이터 대기 중...</div> :
           msgs.map((m, i) => (
-            <div key={i} style={{
-              padding: '6px 10px', marginBottom: '6px',
-              background: m.side === 'BUY' ? 'rgba(38,166,154,0.03)' : 'rgba(239,83,80,0.03)',
-              borderRadius: '4px', border: '1px solid #1e2d45',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-            }}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '14px' }}>{m.tier === 'WHALE' ? '🐋' : m.tier === 'KRAKEN' ? '🐙' : '🐬'}</span>
-                <div>
-                  <div style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '10px', fontWeight: 'bold' }}>{m.side}</div>
-                  <div style={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}>${(m.amount / 1000).toFixed(1)}K</div>
-                </div>
-              </div>
-              <div style={{ color: '#475569', fontSize: '9px' }}>{m.timestamp}</div>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+              <span style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '11px', fontWeight: 'bold' }}>{m.side === 'BUY' ? '▲' : '▼'} ${(m.amount / 1000).toFixed(0)}K</span>
+              <span style={{ color: '#475569', fontSize: '9px' }}>{m.timestamp}</span>
             </div>
           ))
-        )}
+        }
       </div>
     </div>
   );
@@ -119,66 +79,56 @@ function App() {
     <div className="app">
       <Header />
       <div className="main-layout">
-        {/* ROW 1 */}
-        <div className="area-top-left">
+
+        {/* 1. 좌측: 차트 및 하단 지표 */}
+        <div className="area-main-chart">
           <ErrorBoundary>
             <ChartPanel />
           </ErrorBoundary>
         </div>
-
-        <div className="area-top-mid">
-          <div className="grid-cell">
+        <div className="area-bottom-indicators">
+          <div className="card-stack">
             <ErrorBoundary>
-              <TradePerformance />
+              <SentimentPanel />
             </ErrorBoundary>
-            <div className="scroll-container">
-              <ErrorBoundary>
-                <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
-              </ErrorBoundary>
-            </div>
-          </div>
-        </div>
-
-        <div className="area-top-right">
-          <div className="grid-cell">
-            <ErrorBoundary>
-              <DailyBriefing />
-            </ErrorBoundary>
-            <div className="scroll-container">
-              <ErrorBoundary>
-                <ChatPanel />
-              </ErrorBoundary>
-            </div>
-          </div>
-        </div>
-
-        {/* ROW 2 */}
-        <div className="area-bot-left">
-          <div className="grid-cell" style={{ flexDirection: 'row', gap: '12px' }}>
-            <div style={{ flex: 1.5 }}>
-              <ErrorBoundary>
-                <SentimentPanel />
-              </ErrorBoundary>
-            </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ height: '80px' }}>
               <ErrorBoundary>
                 <FearGreed />
               </ErrorBoundary>
             </div>
           </div>
-        </div>
-
-        <div className="area-bot-mid">
           <ErrorBoundary>
             <BigWhaleMonitor />
           </ErrorBoundary>
-        </div>
-
-        <div className="area-bot-right">
           <ErrorBoundary>
             <EventCalendar />
           </ErrorBoundary>
         </div>
+
+        {/* 2. 중앙 사이드바: 성과 + 리포트 */}
+        <div className="area-sidebar-1">
+          <ErrorBoundary>
+            <TradePerformance />
+          </ErrorBoundary>
+          <div className="flex-grow">
+            <ErrorBoundary>
+              <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
+            </ErrorBoundary>
+          </div>
+        </div>
+
+        {/* 3. 우측 사이드바: 요약 + 채팅 */}
+        <div className="area-sidebar-2">
+          <ErrorBoundary>
+            <DailyBriefing />
+          </ErrorBoundary>
+          <div className="flex-grow">
+            <ErrorBoundary>
+              <ChatPanel />
+            </ErrorBoundary>
+          </div>
+        </div>
+
       </div>
     </div>
   )
