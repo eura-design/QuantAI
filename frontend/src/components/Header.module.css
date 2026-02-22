@@ -51,21 +51,17 @@
 
 .logoText em {
   font-style: normal;
-  background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));
+  background: linear-gradient(135deg, var(--accent-emerald), var(--accent-teal));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.badge {
-  font-size: 0.65rem;
-  font-weight: 700;
-  background: rgba(79, 172, 254, 0.1);
-  color: var(--accent-blue);
-  padding: 3px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(79, 172, 254, 0.2);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+.subtitle {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-family: 'Outfit', sans-serif;
+  opacity: 0.8;
 }
 
 .center {
@@ -75,25 +71,26 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 6px 16px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 6px 18px;
+  background: #2563eb;
   border-radius: 30px;
-  border: 1px solid var(--border-main);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  border: none;
 }
 
 .pair {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: white;
   font-family: 'Outfit', sans-serif;
 }
 
 .interval {
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-right: 1px solid var(--border-main);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding-right: 0;
+  border-right: none;
 }
 
 .status {

@@ -8,6 +8,7 @@ import { ChatPanel } from './components/ChatPanel'
 import { SentimentPanel } from './components/SentimentPanel'
 import { DailyBriefing } from './components/DailyBriefing'
 import { TradePerformance } from './components/TradePerformance'
+import { OasisSummary } from './components/OasisSummary'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
 import './App.css'
@@ -70,19 +71,19 @@ function BigWhaleMonitor() {
           msgs.map((m, i) => (
             <div key={i} style={{
               display: 'flex',
-              justify- content: 'space-between',
-        padding: '8px 0',
-        borderBottom: '1px solid var(--border-main)'
+              justifyContent: 'space-between',
+              padding: '8px 0',
+              borderBottom: '1px solid var(--border-main)'
             }}>
-        <span style={{ color: m.side === 'BUY' ? 'var(--bull)' : 'var(--bear)', fontSize: '0.8rem', fontWeight: '800' }}>
-          {m.side} {(m.amount / 1000).toFixed(0)}K
-        </span>
-        <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '500' }}>{m.timestamp}</span>
-      </div>
-      ))
+              <span style={{ color: m.side === 'BUY' ? 'var(--bull)' : 'var(--bear)', fontSize: '0.8rem', fontWeight: '800' }}>
+                {m.side} {(m.amount / 1000).toFixed(0)}K
+              </span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '500' }}>{m.timestamp}</span>
+            </div>
+          ))
         }
+      </div>
     </div>
-    </div >
   );
 }
 
@@ -92,6 +93,7 @@ function App() {
   return (
     <div className="app">
       <Header />
+      <OasisSummary />
       <div className="main-layout">
 
         {/* 1열: 차트 + 하단 지표 4종 */}
@@ -128,7 +130,7 @@ function App() {
         </div>
 
         {/* 2열: 성과 + 리포트 */}
-        <div className="area-sidebar-1" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
+        <div className="area-sidebar-1" style={{ gridColumn: '2', gridRow: '1 / 3', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
           <div style={{ height: '180px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <ErrorBoundary>
               <TradePerformance />
@@ -142,7 +144,7 @@ function App() {
         </div>
 
         {/* 3열: 요약 + 채팅 */}
-        <div className="area-sidebar-2" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
+        <div className="area-sidebar-2" style={{ gridColumn: '3', gridRow: '1 / 3', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
           <div style={{ height: '180px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <ErrorBoundary>
               <DailyBriefing />

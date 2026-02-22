@@ -207,9 +207,10 @@ export function ChartPanel() {
             window.dispatchEvent(new CustomEvent('ws-status-change', { detail: { text, live } }))
         }
 
-        function updatePriceDisplay(close, open) {
+        function updatePriceDisplay(close, open, firstCandleOpen) {
             setLivePrice(close)
-            const dayOpen = candlesRef.current.length > 0 ? candlesRef.current[0].open : open
+            // Use the first candle's open price as the day's open reference
+            const dayOpen = firstCandleOpen || open
             const pct = ((close - dayOpen) / dayOpen) * 100
             setPctChange(pct)
             prevPriceRef.current = close
@@ -270,7 +271,7 @@ export function ChartPanel() {
                     }
 
                     updateEma()
-                    updatePriceDisplay(close, open)
+                    updatePriceDisplay(close, open, candlesRef.current[0]?.open)
                     setOhlcv({ o: formatPrice(open), h: formatPrice(high), l: formatPrice(low), c: formatPrice(close), v: formatVol(vol) })
                     setLastUpdate(new Date().toTimeString().slice(0, 8))
                 } catch (err) { }
@@ -311,7 +312,7 @@ export function ChartPanel() {
 
                 if (candles.length > 0) {
                     const last = candles[candles.length - 1]
-                    updatePriceDisplay(last.close, last.open)
+                    updatePriceDisplay(last.close, last.open, candles[0].open)
                     setOhlcv({ o: formatPrice(last.open), h: formatPrice(last.high), l: formatPrice(last.low), c: formatPrice(last.close), v: formatVol(volData[volData.length - 1].value) })
                 }
                 setTimeout(connectWs, 300)
@@ -341,14 +342,6 @@ export function ChartPanel() {
                     >
                         ${livePrice !== null ? livePrice.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : '--'}
                     </span>
-                    {pctChange !== null && (
-                        <span
-                            className={styles.pctChange}
-                            style={{ color: pctChange >= 0 ? COLORS.up : COLORS.down }}
-                        >
-                            {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
-                        </span>
-                    )}
                 </div>
 
                 {/* 타임프레임 선택기 */}

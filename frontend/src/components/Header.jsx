@@ -33,7 +33,7 @@ export function Header() {
                     <span className={styles.logoText}>
                         Quant<em>AI</em>
                     </span>
-                    <span className={styles.badge}>BETA</span>
+                    <span className={styles.subtitle}>Your Trading Oasis</span>
                 </div>
 
                 <div className={styles.center}>

@@ -34,12 +34,12 @@ export function SentimentPanel() {
         <div className={styles.container}>
             <div className={styles.resultState}>
                 <div className={styles.header}>
-                    📊 실시간 시장 심리 리포트
+                    🌱 시장 참여자들의 정서적 발걸음
                 </div>
 
                 <div className={styles.section}>
                     <div className={styles.sectionHeader}>
-                        <span>바이낸스 선물 포지션</span>
+                        <span>바이낸스 선물 포지션 심리</span>
                         <span className={styles.liveTag}>LIVE</span>
                     </div>
                     <div className={styles.gaugeContainer}>

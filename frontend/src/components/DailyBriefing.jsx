@@ -24,7 +24,7 @@ export function DailyBriefing() {
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                ✨ AI 데일리 3줄 요약
+                ✨ 내일의 휴식을 위한 오늘의 체크포인트
             </div>
             <ul className={styles.list}>
                 {briefs.map((text, i) => (

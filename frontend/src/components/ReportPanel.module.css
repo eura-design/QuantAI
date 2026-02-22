@@ -1,14 +1,14 @@
 .panel {
-    background: var(--bg-card);
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(251, 191, 36, 0.02));
     backdrop-filter: var(--glass-blur);
-    border: 1px solid var(--border-main);
+    border: 1px solid rgba(251, 191, 36, 0.2);
     border-radius: var(--radius-lg);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     height: 100%;
     width: 100%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 8px 32px rgba(251, 191, 36, 0.08);
 }
 
 .panelHeader {

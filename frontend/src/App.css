@@ -1,38 +1,38 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap');
 
 :root {
-  /* Core Colors */
-  --bg-deep: #06090f;
-  --bg-card: rgba(13, 17, 23, 0.7);
-  --bg-card-hover: rgba(22, 27, 34, 0.85);
+  /* Core Colors - Oasis Theme */
+  --bg-deep: #0a0f1d;
+  --bg-card: rgba(15, 23, 42, 0.65);
+  --bg-card-hover: rgba(30, 41, 59, 0.8);
 
   /* Accent Colors */
-  --accent-blue: #4facfe;
-  --accent-teal: #00f2fe;
-  --accent-rose: #f5576c;
-  --accent-purple: #f093fb;
+  --accent-emerald: #10b981;
+  --accent-teal: #14b8a6;
+  --accent-soft-blue: #38bdf8;
+  --accent-gold: #fbbf24;
 
   /* Status Colors */
-  --bull: #26a69a;
-  --bull-glow: rgba(38, 166, 154, 0.3);
-  --bear: #ef5350;
-  --bear-glow: rgba(239, 83, 80, 0.3);
+  --bull: #10b981;
+  --bull-glow: rgba(16, 185, 129, 0.2);
+  --bear: #f43f5e;
+  --bear-glow: rgba(244, 63, 94, 0.2);
 
   /* Border & Glass */
-  --border-main: rgba(255, 255, 255, 0.08);
-  --border-bright: rgba(255, 255, 255, 0.15);
-  --glass-blur: blur(12px);
+  --border-main: rgba(255, 255, 255, 0.06);
+  --border-bright: rgba(255, 255, 255, 0.12);
+  --glass-blur: blur(16px);
 
   /* Text Colors */
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
 
   /* Layout */
-  --radius-lg: 18px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 10px;
+  --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 *,
@@ -59,7 +59,7 @@ body,
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: radial-gradient(circle at 50% -20%, #1e293b 0%, #06090f 60%);
+  background: radial-gradient(circle at 50% -20%, #1e293b 0%, #0a0f1d 70%);
 }
 
 .main-layout {
@@ -68,7 +68,7 @@ body,
   grid-template-columns: 2.2fr 1fr 1fr;
   grid-template-rows: 2.2fr 1fr;
   gap: 16px;
-  padding: 16px 20px 24px;
+  padding: 8px 20px 24px;
   overflow: hidden;
   min-height: 0;
 }
