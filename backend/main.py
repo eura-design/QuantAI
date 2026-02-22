@@ -74,7 +74,7 @@ async def startup():
     asyncio.create_task(monitor_trades())
 
 async def monitor_trades():
-    """가상 매매 실시간 감시 및 처리"""
+    """가상 매매 실시간 감시 및 처리 (1초 주기)"""
     import ccxt
     exchange = ccxt.binance({'options': {'defaultType': 'future'}})
     symbol = "BTC/USDT"
@@ -85,19 +85,27 @@ async def monitor_trades():
             ticker = exchange.fetch_ticker(symbol)
             curr_price = float(ticker['last'])
             
-            # 2. OPEN 상태인 매매 가져오기
             with get_db() as conn:
                 c = conn.cursor()
+                
+                # A. 대기 중(PENDING)인 매매 체결 확인
+                c.execute("SELECT id, side, entry FROM virtual_trades WHERE status='PENDING'")
+                pending_trades = c.fetchall()
+                for pt in pending_trades:
+                    t_id, side, entry = pt['id'], pt['side'], pt['entry']
+                    triggered = False
+                    if side == 'LONG' and curr_price <= entry: triggered = True
+                    elif side == 'SHORT' and curr_price >= entry: triggered = True
+                    
+                    if triggered:
+                        conn.execute("UPDATE virtual_trades SET status='OPEN' WHERE id=?", (t_id,))
+                        print(f"[TRADE] # {t_id} Triggered at {curr_price} (Target: {entry})")
+
+                # B. 진행 중(OPEN)인 매매 승패 확인
                 c.execute("SELECT id, side, tp, sl FROM virtual_trades WHERE status='OPEN'")
                 open_trades = c.fetchall()
-                
-                if not open_trades:
-                    await asyncio.sleep(10)
-                    continue
-
                 for trade in open_trades:
                     t_id, side, tp, sl = trade['id'], trade['side'], trade['tp'], trade['sl']
-                    
                     status = None
                     if side == 'LONG':
                         if curr_price >= tp: status = 'WIN'
@@ -107,18 +115,16 @@ async def monitor_trades():
                         elif curr_price >= sl: status = 'LOSS'
                         
                     if status:
-                        conn.execute(
-                            "UPDATE virtual_trades SET status=?, close_price=? WHERE id=?",
-                            (status, curr_price, t_id)
-                        )
-                        trade_stats_cache["needs_update"] = True  # 통계 갱신 필요함
+                        conn.execute("UPDATE virtual_trades SET status=?, close_price=? WHERE id=?", (status, curr_price, t_id))
+                        trade_stats_cache["needs_update"] = True 
                         print(f"[TRADE] Closed #{t_id} as {status} at {curr_price}")
+                
                 conn.commit()
                 
         except Exception as e:
             print(f"[MONITOR ERROR] {e}")
             
-        await asyncio.sleep(10) # 10초마다 체크
+        await asyncio.sleep(1) # 1초마다 정밀 체크
 
 async def reset_votes_periodically():
     """4시간마다 투표 초기화 (00, 04, 08, 12, 16, 20시)"""
@@ -173,13 +179,33 @@ async def strategy():
                     signal = json.loads(json_part)
                     
                     with get_db() as conn:
-                        conn.execute(
-                            "INSERT INTO virtual_trades (side, entry, tp, sl, status) VALUES (?, ?, ?, ?, 'OPEN')",
-                            (signal['side'], signal['entry'], signal['tp'], signal['sl'])
-                        )
-                        conn.commit()
-                        trade_stats_cache["needs_update"] = True  # 새로운 매매 발생 시 통계 캐시 무효화
-                        print(f"[TRADE] New trade opened: {signal}")
+                        # 1. 현재 진행 중인(OPEN) 포지션이 있는지 확인
+                        active = conn.execute("SELECT id FROM virtual_trades WHERE status='OPEN'").fetchone()
+                        
+                        if active:
+                            print(f"[TRADE] Active position exists. New signal ignored.")
+                        elif signal['side'] != 'NONE':
+                            # 2. 대기 중(PENDING)인 매매가 있으면 최신 정보로 갱신, 없으면 신규 생성
+                            pending = conn.execute("SELECT id FROM virtual_trades WHERE status='PENDING'").fetchone()
+                            if pending:
+                                conn.execute(
+                                    "UPDATE virtual_trades SET side=?, entry=?, tp=?, sl=? WHERE id=?",
+                                    (signal['side'], signal['entry'], signal['tp'], signal['sl'], pending['id'])
+                                )
+                                print(f"[TRADE] Pending signal updated to latest: {signal['side']} at {signal['entry']}")
+                            else:
+                                conn.execute(
+                                    "INSERT INTO virtual_trades (side, entry, tp, sl, status) VALUES (?, ?, ?, ?, 'PENDING')",
+                                    (signal['side'], signal['entry'], signal['tp'], signal['sl'])
+                                )
+                                print(f"[TRADE] New PENDING signal: {signal['side']} at {signal['entry']}")
+                            conn.commit()
+                            trade_stats_cache["needs_update"] = True 
+                        else:
+                            # 신호가 NONE이고 기존 PENDING이 있으면 삭제 (관망으로 변경)
+                            conn.execute("DELETE FROM virtual_trades WHERE status='PENDING'")
+                            conn.commit()
+                            print(f"[TRADE] Signal is NONE. Any pending orders removed.")
             except Exception as e:
                 print(f"[ERROR] Signal extraction failed: {e}")
 

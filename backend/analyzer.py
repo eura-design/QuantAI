@@ -375,7 +375,7 @@ def fetch_ai_daily_brief():
     3. 일정: {event_text}
     """
     try:
-        response = client.models.generate_content(model='gemini-1.5-flash', contents=prompt)
+        response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
         briefs = response.text.strip().split('\n')
         clean_briefs = [b.replace('*', '').replace('-', '').replace('•', '').strip() for b in briefs if b.strip()]
         result = clean_briefs[:3]
@@ -456,7 +456,7 @@ def get_ai_strategy() -> dict:
     """
     
     try:
-        response = client.models.generate_content(model='gemini-2.0-flash', contents=prompt)
+        response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
         strategy_text = response.text
     except Exception as e:
         strategy_text = f"AI 분석 오류: {e}"

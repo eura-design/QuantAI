@@ -226,7 +226,7 @@ export function ChartPanel() {
 
         function connectWs() {
             if (wsRef.current) wsRef.current.close()
-            const wsUrl = `wss://stream.binance.com:9443/ws/btcusdt@kline_${timeframe}`
+            const wsUrl = `wss://fstream.binance.com/ws/btcusdt@kline_${timeframe}`
             wsRef.current = new WebSocket(wsUrl)
 
             wsRef.current.onopen = () => {
@@ -283,7 +283,7 @@ export function ChartPanel() {
         }
 
         // 초기 REST 데이터 로드
-        const restUrl = `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${timeframe}&limit=500`
+        const restUrl = `https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=${timeframe}&limit=500`
         fetch(restUrl)
             .then(r => r.json())
             .then(raw => {
