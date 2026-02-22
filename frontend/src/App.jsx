@@ -48,30 +48,41 @@ function BigWhaleMonitor() {
   }, []);
 
   return (
-    <div style={{
-      height: '100%', display: 'flex', flexDirection: 'column',
-      background: 'rgba(13, 17, 23, 0.7)', backdropFilter: 'blur(8px)',
-      border: '1px solid rgba(48, 54, 61, 0.6)', borderRadius: '16px',
-      padding: '20px 20px 30px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)', overflow: 'hidden'
-    }}>
+    <div className="glass-card" style={{ height: '100%', display: 'flex', flexDirection: 'column', padding: '16px 20px' }}>
       <div style={{
-        fontSize: '1rem', fontWeight: '800', color: '#f0f6fc',
-        marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px'
+        fontFamily: 'Outfit', fontSize: '0.95rem', fontWeight: '800', color: 'var(--text-primary)',
+        marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px'
       }}>
         <span>🐋 실시간 고래 감시</span>
-        <span style={{ fontSize: '10px', color: status === 'ON' ? '#26a69a' : '#ef5350', marginLeft: 'auto' }}>● {status}</span>
+        <span style={{
+          fontSize: '0.6rem',
+          fontWeight: '900',
+          color: status === 'ON' ? 'var(--bull)' : 'var(--bear)',
+          marginLeft: 'auto',
+          background: 'rgba(255,255,255,0.05)',
+          padding: '1px 6px',
+          borderRadius: '4px',
+          border: '1px solid currentColor'
+        }}>● {status}</span>
       </div>
       <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
-        {msgs.length === 0 ? <div style={{ color: '#475569', textAlign: 'center', fontSize: '11px', marginTop: '20px' }}>데이터 대기 중...</div> :
+        {msgs.length === 0 ? <div style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.75rem', marginTop: '20px' }}>데이터 대기 중...</div> :
           msgs.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-              <span style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '12px', fontWeight: 'bold' }}>{m.side} ${(m.amount / 1000).toFixed(0)}K</span>
-              <span style={{ color: '#445566', fontSize: '10px' }}>{m.timestamp}</span>
-            </div>
-          ))
-        }
+            <div key={i} style={{
+              display: 'flex',
+              justify- content: 'space-between',
+        padding: '8px 0',
+        borderBottom: '1px solid var(--border-main)'
+            }}>
+        <span style={{ color: m.side === 'BUY' ? 'var(--bull)' : 'var(--bear)', fontSize: '0.8rem', fontWeight: '800' }}>
+          {m.side} {(m.amount / 1000).toFixed(0)}K
+        </span>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: '500' }}>{m.timestamp}</span>
       </div>
+      ))
+        }
     </div>
+    </div >
   );
 }
 
@@ -84,14 +95,14 @@ function App() {
       <div className="main-layout">
 
         {/* 1열: 차트 + 하단 지표 4종 */}
-        <div style={{ gridColumn: '1', gridRow: '1 / 3', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+        <div style={{ gridColumn: '1', gridRow: '1 / 3', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
           <div style={{ flex: 2.2, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ErrorBoundary>
               <ChartPanel />
             </ErrorBoundary>
           </div>
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '16px', minHeight: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div style={{ flex: 0.9, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <ErrorBoundary>
                   <SentimentPanel />

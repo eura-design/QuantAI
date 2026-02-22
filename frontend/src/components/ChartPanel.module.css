@@ -3,36 +3,45 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: #0d1117;
-    border-right: 1px solid #1e2d45;
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
     overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .topBar {
-    padding: 10px 20px;
-    border-bottom: 1px solid #1e2d45;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-main);
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.01);
 }
 
 .priceBlock {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
+    align-items: center;
+    gap: 12px;
 }
 
 .livePrice {
-    font-size: 1.5rem;
-    font-weight: 700;
-    transition: color 0.3s;
-    letter-spacing: -0.02em;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    transition: color 0.3s ease;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
 }
 
 .pctChange {
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .mainContent {
@@ -58,44 +67,46 @@
 .volChart {
     width: 100%;
     height: 25%;
-    border-top: 1px solid #1e2d45;
+    border-top: 1px solid var(--border-main);
 }
 
 .timeframeSelector {
     display: flex;
     gap: 4px;
-    background: #131c2e;
-    padding: 3px;
-    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--border-main);
 }
 
 .tfButton {
     background: transparent;
     border: none;
-    color: #64748b;
-    padding: 4px 10px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    border-radius: 4px;
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 8px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition);
+    text-transform: uppercase;
 }
 
 .tfButton:hover {
-    color: #fff;
+    color: var(--text-primary);
     background: rgba(255, 255, 255, 0.05);
 }
 
 .tfButton.active {
-    background: #1e2d45;
-    color: #4facfe;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    background: var(--accent-blue);
+    color: white;
+    box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
 }
 
 .infoBar {
-    padding: 7px 20px;
-    background: #0d1117;
-    border-top: 1px solid #1e2d45;
+    padding: 8px 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-top: 1px solid var(--border-main);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -104,42 +115,37 @@
 
 .ohlcv {
     display: flex;
-    gap: 18px;
-    font-size: 0.72rem;
+    gap: 20px;
+    font-size: 0.7rem;
 }
 
 .ohlcv span {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .ohlcv label {
-    color: #475569;
-    font-weight: 500;
+    color: var(--text-secondary);
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .ohlcv span>span {
-    color: #94a3b8;
-}
-
-.ohlcO {
-    color: #94a3b8;
+    color: var(--text-primary);
+    font-weight: 600;
 }
 
 .ohlcH {
-    color: #26a69a;
+    color: var(--bull) !important;
 }
 
 .ohlcL {
-    color: #ef5350;
-}
-
-.ohlcC {
-    color: #4facfe;
+    color: var(--bear) !important;
 }
 
 .updateTime {
-    font-size: 0.7rem;
-    color: #334155;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    font-weight: 500;
 }

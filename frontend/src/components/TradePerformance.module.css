@@ -1,109 +1,124 @@
 .container {
-    background: rgba(13, 17, 23, 0.7);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(48, 54, 61, 0.6);
-    border-radius: 16px;
-    padding: 20px;
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
     height: 100%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
 }
 
 .header {
-    margin-bottom: 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    margin-bottom: 12px;
 }
 
 .badge {
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     font-weight: 800;
-    color: #58a6ff;
-    letter-spacing: 1px;
-    background: rgba(88, 166, 255, 0.1);
+    color: var(--accent-blue);
+    letter-spacing: 0.05em;
+    background: rgba(79, 172, 254, 0.1);
     padding: 2px 8px;
     border-radius: 4px;
     width: fit-content;
+    text-transform: uppercase;
+    margin-bottom: 4px;
 }
 
 .title {
-    font-size: 1.1rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
     font-weight: 800;
-    color: #f0f6fc;
-    margin: 0;
+    color: var(--text-primary);
 }
 
 .statsGrid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-    margin-bottom: 24px;
+    gap: 10px;
+    margin-bottom: 16px;
 }
 
 .statItem {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 12px;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 4px;
+    border-radius: var(--radius-md);
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-main);
 }
 
 .statValue {
-    font-size: 1.2rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
     font-weight: 800;
-    color: #ffffff;
-    margin-bottom: 2px;
+    color: var(--text-primary);
 }
 
 .statLabel {
-    font-size: 0.7rem;
-    color: #8b949e;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
     font-weight: 600;
+    text-transform: uppercase;
 }
 
 .historySection {
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 16px;
+    flex: 1;
+    overflow-y: auto;
+    border-top: 1px solid var(--border-main);
+    padding-top: 12px;
 }
 
 .historyTitle {
-    font-size: 0.85rem;
-    color: #f0f6fc;
-    margin-bottom: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
 }
 
 .historyList {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .tradeRow {
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.02);
-    padding: 8px 12px;
-    border-radius: 8px;
-    gap: 12px;
+    background: rgba(255, 255, 255, 0.01);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    gap: 10px;
+    border: 1px solid transparent;
+    transition: var(--transition);
+}
+
+.tradeRow:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-main);
 }
 
 .side {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     font-weight: 800;
-    padding: 2px 6px;
+    padding: 2px 4px;
     border-radius: 4px;
-    min-width: 45px;
+    min-width: 40px;
     text-align: center;
 }
 
 .long {
-    background: rgba(38, 166, 154, 0.15);
-    color: #26a69a;
+    background: rgba(38, 166, 154, 0.1);
+    color: var(--bull);
+    border: 1px solid rgba(38, 166, 154, 0.2);
 }
 
 .short {
-    background: rgba(239, 83, 80, 0.15);
-    color: #ef5350;
+    background: rgba(239, 83, 80, 0.1);
+    color: var(--bear);
+    border: 1px solid rgba(239, 83, 80, 0.2);
 }
 
 .tradeInfo {
@@ -111,43 +126,36 @@
 }
 
 .entryPrice {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    color: #c9d1d9;
+    color: var(--text-primary);
 }
 
 .timestamp {
-    font-size: 0.65rem;
-    color: #6e7681;
+    font-size: 0.6rem;
+    color: var(--text-muted);
 }
 
 .status {
-    font-size: 0.75rem;
-    font-weight: 700;
-}
-
-.open {
-    color: #8b949e;
+    font-size: 0.7rem;
+    font-weight: 800;
 }
 
 .win {
-    color: #26a69a;
-    text-shadow: 0 0 10px rgba(38, 166, 154, 0.3);
+    color: var(--bull);
 }
 
 .loss {
-    color: #ef5350;
+    color: var(--bear);
 }
 
-.empty {
-    font-size: 0.75rem;
-    color: #6e7681;
-    text-align: center;
-    padding: 20px 0;
+.open {
+    color: var(--text-muted);
 }
 
 .loading {
-    padding: 40px;
+    padding: 20px;
     text-align: center;
-    color: #8b949e;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
 }
