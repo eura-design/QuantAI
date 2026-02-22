@@ -408,12 +408,44 @@ def fetch_ai_daily_brief():
         return ["뉴스 요약을 불러올 수 없습니다.", "현재 시장 변동성에 유의하세요.", "주요 경제 일정을 확인하세요."]
 
 def get_economic_events():
-    """주요 거시경제 일정 데이터"""
-    return [
-        {"title": "미국 CPI(소비자물가지수) 발표", "d_day": "D-1", "impact": "High", "date": "2026-02-21"},
-        {"title": "FOMC 정례 회의", "d_day": "D-4", "impact": "Critical", "date": "2026-02-24"},
-        {"title": "홍콩 스테이블코인 라이선스 발표", "d_day": "D-10", "impact": "Medium", "date": "2026-03-02"}
+    """주요 거시경제 일정 데이터 (실시간 날짜 기준 D-Day 계산 및 필터링)"""
+    now = datetime.now()
+    today = now.date()
+    
+    # 원본 일정 데이터 (일정 추가/수정은 여기에서만 수행)
+    raw_events = [
+        {"title": "미국 CPI(소비자물가지수) 발표", "date": "2026-02-21", "impact": "High"},
+        {"title": "FOMC 정례 회의", "date": "2026-02-24", "impact": "Critical"},
+        {"title": "미국 신규 실업수당 청구건수", "date": "2026-02-26", "impact": "Medium"},
+        {"title": "홍콩 스테이블코인 라이선스 발표", "date": "2026-03-02", "impact": "Medium"},
+        {"title": "미국 비농업 고용지수(NFP) 발표", "date": "2026-03-06", "impact": "High"}
     ]
+    
+    processed_events = []
+    
+    for ev in raw_events:
+        ev_date = datetime.strptime(ev['date'], "%Y-%m-%d").date()
+        diff = (ev_date - today).days
+        
+        # 날짜별 상태 설정
+        if diff < 0:
+            # 과거 일정은 표시하지 않음 (또는 필요시 '발표완료' 등으로 표시)
+            continue
+        elif diff == 0:
+            d_day = "Today"
+        else:
+            d_day = f"D-{diff}"
+            
+        processed_events.append({
+            "title": ev['title'],
+            "d_day": d_day,
+            "impact": ev['impact'],
+            "date": ev['date']
+        })
+        
+    # 날짜순 정렬 후 상위 3~4개만 반환
+    processed_events.sort(key=lambda x: x['date'])
+    return processed_events[:4]
 
 def get_ai_strategy() -> dict:
     fr, oi = fetch_market_info()
