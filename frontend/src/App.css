@@ -43,8 +43,10 @@ body {
   flex: 1;
   grid-template-columns: 2.2fr 1fr 1fr;
   grid-template-rows: 2.2fr 1fr;
-  gap: 12px;
-  padding: 12px;
+  gap: 16px;
+  /* 간격도 조금 더 넓힘 */
+  padding: 16px 20px 24px;
+  /* [상, 좌우, 하] 패딩 적용 */
   overflow: hidden;
   min-height: 0;
   background: #06090f;

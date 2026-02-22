@@ -90,8 +90,8 @@ function App() {
               <ChartPanel />
             </ErrorBoundary>
           </div>
-          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', minHeight: 0 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '16px', minHeight: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ flex: 1.5, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <ErrorBoundary>
                   <SentimentPanel />
@@ -117,7 +117,7 @@ function App() {
         </div>
 
         {/* 2열: 성과 + 리포트 */}
-        <div className="area-sidebar-1" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+        <div className="area-sidebar-1" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
           <div style={{ height: '180px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <ErrorBoundary>
               <TradePerformance />
@@ -131,7 +131,7 @@ function App() {
         </div>
 
         {/* 3열: 요약 + 채팅 */}
-        <div className="area-sidebar-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+        <div className="area-sidebar-2" style={{ display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 0 }}>
           <div style={{ height: '180px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <ErrorBoundary>
               <DailyBriefing />
