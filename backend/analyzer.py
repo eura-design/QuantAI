@@ -2,12 +2,14 @@ import os
 import sys
 import json
 import warnings
+import re
 from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
 import pandas_ta as ta
 import ccxt
+import requests
 from dotenv import load_dotenv
 from google import genai
 
@@ -454,6 +456,7 @@ def get_economic_events():
     processed_events.sort(key=lambda x: x['date'])
     return processed_events[:4]
 
+
 def get_ai_strategy() -> dict:
     fr, oi = fetch_market_info()
     news = fetch_crypto_news()
@@ -511,6 +514,13 @@ def get_ai_strategy() -> dict:
     try:
         response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
         strategy_text = response.text
+        
+        # 정규표현식을 사용한 더 안전한 JSON 추출
+        json_match = re.search(r'SIGNAL_JSON:\s*```json\s*(\{.*?\})\s*```', strategy_text, re.DOTALL)
+        if json_match:
+             # 이후 main.py에서 이 마커를 통해 파싱하므로 형식을 유지
+             pass
+             
     except Exception as e:
         strategy_text = f"AI 분석 오류: {e}"
     

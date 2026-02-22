@@ -1,0 +1,496 @@
+/* Shared / Base styles if needed */
+.loading {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 600;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* Sentiment Panel Styles */
+.sentimentContainer {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    padding: 12px 14px;
+    height: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.sentimentResult {
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.sentimentHeader {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+    text-align: center;
+    letter-spacing: 0.02em;
+}
+
+.sentimentSection {
+    margin-bottom: 8px;
+}
+
+.sentimentSectionHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.liveTag {
+    font-size: 0.55rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(38, 166, 154, 0.1);
+    color: var(--bull);
+    border: 1px solid rgba(38, 166, 154, 0.2);
+    font-weight: 800;
+}
+
+.gaugeContainer {
+    margin-bottom: 4px;
+}
+
+.gaugeLabels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    font-weight: 800;
+    margin-bottom: 4px;
+    font-family: 'Outfit', sans-serif;
+}
+
+.longLabel {
+    color: var(--bull);
+    text-shadow: 0 0 10px var(--bull-glow);
+}
+
+.shortLabel {
+    color: var(--bear);
+    text-shadow: 0 0 10px var(--bear-glow);
+}
+
+.barBackground {
+    height: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.longBar {
+    height: 100%;
+    background: linear-gradient(90deg, #1de9b6 0%, #00bfa5 100%);
+    box-shadow: 0 0 15px rgba(29, 233, 182, 0.4);
+    transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Fear & Greed Styles */
+.fearGreedWidget {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    height: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.fearGreedHeader {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.fearGreedScore {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.fearGreedGauge {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.fearGreedLabel {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 700;
+    font-family: 'Outfit', sans-serif;
+}
+
+.fearGreedScale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+/* Event Calendar Styles */
+.calendarContainer {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    height: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+}
+
+.calendarTitle {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.calendarList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.calendarItem {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-md);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-main);
+    transition: var(--transition);
+}
+
+.calendarItem:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-bright);
+}
+
+.calendarItem::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 60%;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
+}
+
+.High::before {
+    background: var(--accent-rose);
+    box-shadow: 0 0 10px var(--bear-glow);
+}
+
+.Critical::before {
+    background: #ff0055;
+    box-shadow: 0 0 12px rgba(255, 0, 85, 0.4);
+}
+
+.Medium::before {
+    background: var(--accent-blue);
+    box-shadow: 0 0 10px rgba(79, 172, 254, 0.3);
+}
+
+.dDay {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+    font-weight: 800;
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-right: 12px;
+    min-width: 48px;
+    text-align: center;
+    border: 1px solid var(--border-main);
+}
+
+.eventInfo {
+    flex: 1;
+}
+
+.eventTitle {
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.eventDate {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.impactBadge {
+    font-size: 0.55rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+}
+
+.Critical .impactBadge {
+    color: #ff0055;
+    background: rgba(255, 0, 85, 0.1);
+}
+
+/* Daily Briefing Styles */
+.briefingContainer {
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    height: 100%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    display: flex;
+    flex-direction: column;
+}
+
+.briefingHeader {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.briefingList {
+    list-style: none;
+}
+
+.briefingItem {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 12px;
+    animation: fadeInSlide 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInSlide {
+    from {
+        opacity: 0;
+        transform: translateX(-15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.briefingItem:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.briefingItem:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.briefingBullet {
+    color: var(--accent-blue);
+    font-weight: 800;
+}
+
+/* Big Whale Monitor Styles */
+.whaleContainer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition: var(--transition);
+}
+
+.whaleContainer:hover {
+    border-color: var(--border-bright);
+}
+
+.whaleHeader {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.whaleStatusBadge {
+    font-size: 0.6rem;
+    font-weight: 900;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid currentColor;
+    text-transform: uppercase;
+}
+
+.statusOn {
+    color: var(--bull);
+}
+
+.statusOff {
+    color: var(--bear);
+}
+
+.whaleList {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.whalePlaceholder {
+    color: var(--text-muted);
+    text-align: center;
+    font-size: 0.75rem;
+    margin-top: 20px;
+}
+
+.whaleRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-main);
+}
+
+.whaleBuy {
+    color: var(--bull);
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.whaleSell {
+    color: var(--bear);
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.whaleTime {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+/* Oasis Summary Styles */
+.oasisWrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 16px;
+    padding: 10px 20px;
+    margin: 0 20px 4px;
+    animation: fadeInScale 1s ease-out;
+}
+
+.oasisBadge {
+    background: var(--accent-emerald);
+    color: #0a0f1d;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+}
+
+.oasisMessage {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
