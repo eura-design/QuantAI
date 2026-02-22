@@ -55,6 +55,7 @@ body {
   grid-column: 1;
   grid-row: 1;
   min-height: 0;
+  display: flex;
 }
 
 .area-bottom-indicators {
@@ -84,19 +85,41 @@ body {
   min-height: 0;
 }
 
-/* 유틸리티 */
-.card-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
+/* 컴포넌트 래퍼: 부모 높이를 꽉 채우도록 강제 */
+.area-main-chart>*,
+.area-sidebar-1>*,
+.area-sidebar-2>*,
+.area-bottom-indicators>* {
+  width: 100%;
   min-height: 0;
 }
 
+.area-main-chart>div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 성과 패널 고정 높이 방지 및 리포트/채팅 영역 확장 */
 .flex-grow {
   flex: 1;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.flex-grow>div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 스크롤이 필요한 내부 컴포넌트 처리 */
+.scroll-container {
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;
 }
 
 /* 반응형 대응 */

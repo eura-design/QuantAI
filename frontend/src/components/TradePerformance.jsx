@@ -50,29 +50,6 @@ export function TradePerformance() {
                 </div>
             </div>
 
-            <div className={styles.historySection}>
-                <h4 className={styles.historyTitle}>최근 매매 기록</h4>
-                <div className={styles.historyList}>
-                    {history.length === 0 ? (
-                        <div className={styles.empty}>진행 중인 매매가 없습니다.</div>
-                    ) : (
-                        history.map((trade) => (
-                            <div key={trade.id} className={styles.tradeRow}>
-                                <div className={`${styles.side} ${styles[trade.side.toLowerCase()]}`}>
-                                    {trade.side}
-                                </div>
-                                <div className={styles.tradeInfo}>
-                                    <div className={styles.entryPrice}>@{trade.entry.toLocaleString()}</div>
-                                    <div className={styles.timestamp}>{new Date(trade.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-                                </div>
-                                <div className={`${styles.status} ${styles[trade.status.toLowerCase()]}`}>
-                                    {trade.status === 'OPEN' ? '진행중' : trade.status}
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-            </div>
         </div>
     )
 }

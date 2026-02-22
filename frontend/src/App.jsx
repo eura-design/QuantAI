@@ -20,11 +20,9 @@ function BigWhaleMonitor() {
   useEffect(() => {
     let active = true;
     let ws = null;
-    const BINANCE_TRADE_WS = 'wss://stream.binance.com:9443/ws/btcusdt@trade';
-
     const connect = () => {
       try {
-        ws = new WebSocket(BINANCE_TRADE_WS);
+        ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
         ws.onopen = () => { if (active) setStatus('ON'); }
         ws.onmessage = (e) => {
           if (!active) return;
@@ -33,12 +31,11 @@ function BigWhaleMonitor() {
             const amount = parseFloat(m.p) * parseFloat(m.q);
             if (amount >= 50000) {
               const alert = {
-                tier: amount >= 100000 ? "WHALE" : "DOLPHIN",
                 side: m.m ? "SELL" : "BUY",
                 amount: amount,
                 timestamp: new Date(m.T).toTimeString().slice(0, 8)
               };
-              setMsgs(p => [alert, ...p].slice(0, 20));
+              setMsgs(p => [alert, ...p].slice(0, 15));
             }
           } catch (err) { }
         }
@@ -46,7 +43,6 @@ function BigWhaleMonitor() {
         ws.onclose = () => { if (active) setTimeout(connect, 5000); }
       } catch (e) { }
     };
-
     connect();
     return () => { active = false; if (ws) ws.close(); }
   }, []);
@@ -54,16 +50,18 @@ function BigWhaleMonitor() {
   return (
     <div style={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      background: '#0d1117', border: '1px solid #1e2d45', borderRadius: '12px',
-      overflow: 'hidden'
+      background: '#0d1117', border: '1px solid #1e2d45', borderRadius: '12px', overflow: 'hidden'
     }}>
-      <div style={{ padding: '8px 12px', background: '#131c2e', borderBottom: '1px solid #1e2d45', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold' }}>🐋 실시간 고래 감시</div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px' }}>
-        {msgs.length === 0 ? <div style={{ color: '#475569', textAlign: 'center', fontSize: '10px', padding: '10px' }}>데이터 대기 중...</div> :
+      <div style={{ padding: '8px 12px', background: '#131c2e', borderBottom: '1px solid #1e2d45', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
+        <span>🐋 실시간 고래 감시</span>
+        <span style={{ color: status === 'ON' ? '#26a69a' : '#ef5350' }}>● {status}</span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+        {msgs.length === 0 ? <div style={{ color: '#475569', textAlign: 'center', fontSize: '11px', marginTop: '20px' }}>데이터 대기 중...</div> :
           msgs.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-              <span style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '11px', fontWeight: 'bold' }}>{m.side === 'BUY' ? '▲' : '▼'} ${(m.amount / 1000).toFixed(0)}K</span>
-              <span style={{ color: '#475569', fontSize: '9px' }}>{m.timestamp}</span>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+              <span style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '12px', fontWeight: 'bold' }}>{m.side} ${(m.amount / 1000).toFixed(0)}K</span>
+              <span style={{ color: '#445566', fontSize: '10px' }}>{m.timestamp}</span>
             </div>
           ))
         }
@@ -80,49 +78,61 @@ function App() {
       <Header />
       <div className="main-layout">
 
-        {/* 1. 좌측: 차트 및 하단 지표 */}
-        <div className="area-main-chart">
-          <ErrorBoundary>
-            <ChartPanel />
-          </ErrorBoundary>
-        </div>
-        <div className="area-bottom-indicators">
-          <div className="card-stack">
+        {/* 1열: 차트 + 하단 지표 4종 */}
+        <div style={{ gridColumn: '1', gridRow: '1 / 3', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+          <div style={{ flex: 2.2, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ErrorBoundary>
-              <SentimentPanel />
+              <ChartPanel />
             </ErrorBoundary>
-            <div style={{ height: '80px' }}>
+          </div>
+          <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', minHeight: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ flex: 1.5, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <ErrorBoundary>
+                  <SentimentPanel />
+                </ErrorBoundary>
+              </div>
+              <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <ErrorBoundary>
+                  <FearGreed />
+                </ErrorBoundary>
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
               <ErrorBoundary>
-                <FearGreed />
+                <BigWhaleMonitor />
+              </ErrorBoundary>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              <ErrorBoundary>
+                <EventCalendar />
               </ErrorBoundary>
             </div>
           </div>
-          <ErrorBoundary>
-            <BigWhaleMonitor />
-          </ErrorBoundary>
-          <ErrorBoundary>
-            <EventCalendar />
-          </ErrorBoundary>
         </div>
 
-        {/* 2. 중앙 사이드바: 성과 + 리포트 */}
-        <div className="area-sidebar-1">
-          <ErrorBoundary>
-            <TradePerformance />
-          </ErrorBoundary>
-          <div className="flex-grow">
+        {/* 2열: 성과 + 리포트 */}
+        <div className="area-sidebar-1" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #1e2d45', borderRadius: '12px', background: '#0d1117', overflow: 'hidden' }}>
+            <ErrorBoundary>
+              <TradePerformance />
+            </ErrorBoundary>
+          </div>
+          <div className="flex-grow" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ErrorBoundary>
               <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
             </ErrorBoundary>
           </div>
         </div>
 
-        {/* 3. 우측 사이드바: 요약 + 채팅 */}
-        <div className="area-sidebar-2">
-          <ErrorBoundary>
-            <DailyBriefing />
-          </ErrorBoundary>
-          <div className="flex-grow">
+        {/* 3열: 요약 + 채팅 */}
+        <div className="area-sidebar-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <ErrorBoundary>
+              <DailyBriefing />
+            </ErrorBoundary>
+          </div>
+          <div className="flex-grow" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <ErrorBoundary>
               <ChatPanel />
             </ErrorBoundary>
