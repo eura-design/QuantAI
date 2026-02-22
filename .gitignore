@@ -20,3 +20,4 @@ dist/
 # Database & Cache
 *.db
 brief_cache.json
+backend/news_cache*.json

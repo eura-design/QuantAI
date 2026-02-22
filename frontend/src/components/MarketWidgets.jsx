@@ -228,7 +228,8 @@ export function BigWhaleMonitor() {
             { id: 5, type: 'BUY', amount: '12.1 BTC', time: '12:05', price: '98,405' }, // Whale
             { id: 6, type: 'BUY', amount: '8.2 BTC', time: '12:06', price: '98,410' },  // Shark
         ];
-        setTxs(mockTxs);
+        // 최신순으로 정렬 (id 역순)
+        setTxs(mockTxs.reverse());
     }, [lang])
 
     return (
