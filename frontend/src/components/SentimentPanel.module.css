@@ -3,85 +3,11 @@
     backdrop-filter: blur(8px);
     border: 1px solid rgba(48, 54, 61, 0.6);
     border-radius: 16px;
-    padding: 14px 16px;
+    padding: 10px 14px;
     height: 100%;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* 투표 전 초기 화면 */
-.initialState {
-    text-align: center;
-    padding: 10px 0;
-}
-
-.headerCompact {
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: #f8fafc;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.subTitle {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    margin-bottom: 20px;
-}
-
-.voteButtons {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-}
-
-.bullBtnBig,
-.bearBtnBig {
-    flex: 1;
-    height: 48px;
-    border: none;
-    border-radius: 12px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.bullBtnBig {
-    background: linear-gradient(135deg, #26a69a 0%, #00bfa5 100%);
-    box-shadow: 0 4px 15px rgba(38, 166, 154, 0.3);
-}
-
-.bearBtnBig {
-    background: linear-gradient(135deg, #ef5350 0%, #d32f2f 100%);
-    box-shadow: 0 4px 15px rgba(239, 83, 80, 0.3);
-}
-
-.bullBtnBig:hover,
-.bearBtnBig:hover {
-    transform: translateY(-3px);
-    filter: brightness(1.1);
-}
-
-.bullBtnBig:active,
-.bearBtnBig:active {
-    transform: translateY(1px);
-}
-
-.hintText {
-    font-size: 0.65rem;
-    color: #64748b;
-    margin: 0;
-}
-
-/* 투표 후 결과 화면 */
 .resultState {
     animation: fadeIn 0.8s ease-out;
 }
@@ -99,67 +25,60 @@
 }
 
 .header {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 800;
     color: #ffffff;
-    margin-bottom: 14px;
+    margin-bottom: 8px;
     text-align: center;
 }
 
 .section {
-    margin-bottom: 10px;
+    margin-bottom: 4px;
 }
 
 .sectionHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: #94a3b8;
-    margin-bottom: 8px;
-}
-
-.liveTag,
-.timerTag {
-    font-size: 0.6rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    background: rgba(255, 255, 255, 0.1);
+    margin-bottom: 4px;
 }
 
 .liveTag {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
     color: #26a69a;
     border: 1px solid rgba(38, 166, 154, 0.3);
 }
 
 .gaugeContainer {
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
 .labels {
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 
-.longLabel,
-.bullText {
+.longLabel {
     color: #26a69a;
 }
 
-.shortLabel,
-.bearText {
+.shortLabel {
     color: #ef5350;
 }
 
-.barBackground,
-.barBackgroundUser {
-    height: 10px;
+.barBackground {
+    height: 8px;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 5px;
+    border-radius: 4px;
     overflow: hidden;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
 }
@@ -170,28 +89,9 @@
     transition: width 1.2s ease;
 }
 
-.bullBar {
-    height: 100%;
-    background: linear-gradient(90deg, #58a6ff 0%, #2188ff 100%);
-    transition: width 1.2s ease;
-}
-
-.divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-    margin: 16px 0;
-}
-
-.voteFooter {
-    text-align: right;
-    font-size: 0.65rem;
-    color: #475569;
-    margin-top: 4px;
-}
-
 .loading {
-    padding: 30px;
+    padding: 20px;
     text-align: center;
     color: #64748b;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
