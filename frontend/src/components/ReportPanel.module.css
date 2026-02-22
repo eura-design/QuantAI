@@ -9,6 +9,13 @@
     height: 100%;
     width: 100%;
     box-shadow: 0 8px 32px rgba(251, 191, 36, 0.08);
+    transition: var(--transition);
+}
+
+.panel:hover {
+    transform: translateY(-5px);
+    border-color: rgba(251, 191, 36, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(251, 191, 36, 0.1);
 }
 
 .panelHeader {
@@ -136,4 +143,25 @@
 .errorIcon {
     font-size: 2rem;
     filter: drop-shadow(0 0 10px var(--bear-glow));
+}
+
+.refreshBtn {
+    background: rgba(37, 99, 235, 0.1);
+    border: 1px solid rgba(37, 99, 235, 0.3);
+    color: #60a5fa;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    text-transform: uppercase;
+    font-family: 'Outfit', sans-serif;
+}
+
+.refreshBtn:hover {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+    box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
 }

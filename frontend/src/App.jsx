@@ -6,18 +6,20 @@ import { TradePerformance } from './components/TradePerformance'
 import { SentimentPanel, FearGreed, DailyBriefing, EventCalendar, OasisSummary, BigWhaleMonitor } from './components/MarketWidgets'
 import ErrorBoundary from './components/ErrorBoundary'
 import { useStrategy } from './hooks/useStrategy'
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import './App.css'
 
-function App() {
-  const { data, loading, error, refetch } = useStrategy()
+function AppContent() {
+  const { lang } = useLanguage()
+  const { data, loading, error, refetch } = useStrategy(lang)
 
   return (
     <div className="app">
       <Header />
-      <OasisSummary />
+      <OasisSummary data={data} loading={loading} />
 
       <div className="main-layout">
-        {/* 1열: 차트 + 하단 지표 4종 */}
+        {/* 1열: 차트 + 하단 지표 3세트 */}
         <div className="col-main">
           <div className="col-main-top">
             <ErrorBoundary>
@@ -67,7 +69,7 @@ function App() {
           </div>
         </div>
 
-        {/* 3열: 요약 + 채팅 */}
+        {/* 3열: 뉴스 요약 + 채팅 */}
         <div className="area-sidebar-2 sidebar-container">
           <div className="fixed-height-180 flex-column">
             <ErrorBoundary>
@@ -82,6 +84,14 @@ function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   )
 }
 

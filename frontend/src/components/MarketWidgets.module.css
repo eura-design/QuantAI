@@ -26,12 +26,19 @@
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--border-main);
     border-radius: var(--radius-lg);
-    padding: 12px 14px;
+    padding: 8px 12px;
     height: 100%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
     justify-content: center;
+    transition: var(--transition);
+}
+
+.sentimentContainer:hover {
+    transform: translateY(-5px);
+    border-color: rgba(20, 184, 166, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(20, 184, 166, 0.1);
 }
 
 .sentimentResult {
@@ -52,11 +59,11 @@
 
 .sentimentHeader {
     font-family: 'Outfit', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 700;
+    font-size: 0.95rem;
+    font-weight: 800;
     color: var(--text-primary);
-    margin-bottom: 12px;
-    text-align: center;
+    margin-bottom: 8px;
+    text-align: left;
     letter-spacing: 0.02em;
 }
 
@@ -110,7 +117,7 @@
 }
 
 .barBackground {
-    height: 10px;
+    height: 8px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 5px;
     overflow: hidden;
@@ -125,60 +132,108 @@
     transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Whale Tracking Styles */
+.whaleContainer {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 16px 20px;
+    background: var(--bg-card);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-main);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition: var(--transition);
+    overflow: hidden;
+}
+
+.whaleList {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+}
+
 /* Fear & Greed Styles */
 .fearGreedWidget {
     background: var(--bg-card);
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--border-main);
     border-radius: var(--radius-lg);
-    padding: 14px 16px;
+    padding: 12px 16px;
     height: 100%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: center;
+    transition: var(--transition);
 }
 
-.fearGreedHeader {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.65rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    margin-bottom: 8px;
+.fearGreedWidget:hover {
+    transform: translateY(-5px);
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.1);
 }
 
-.fearGreedScore {
+.fearGreedTitle {
     font-family: 'Outfit', sans-serif;
-    font-size: 2rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.02em;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.scoreRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.scoreNumber {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
     font-weight: 800;
     line-height: 1;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    transition: var(--transition);
 }
 
-.fearGreedGauge {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    margin-bottom: 8px;
+.flash {
+    animation: var(--ani-flash);
 }
 
-.fearGreedLabel {
-    font-size: 0.95rem;
-    color: var(--text-primary);
+.scoreText {
+    font-size: 1.1rem;
     font-weight: 700;
-    font-family: 'Outfit', sans-serif;
+    color: var(--text-primary);
 }
 
-.fearGreedScale {
+.progressContainer {
+    width: 100%;
+}
+
+.progressTrack {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 4px;
+}
+
+.progressBar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.labelsRow {
     display: flex;
     justify-content: space-between;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
+    font-weight: 800;
     color: var(--text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
 }
 
 /* Event Calendar Styles */
@@ -192,6 +247,13 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
+    transition: var(--transition);
+}
+
+.calendarContainer:hover {
+    transform: translateY(-5px);
+    border-color: rgba(56, 189, 248, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(56, 189, 248, 0.1);
 }
 
 .calendarTitle {
@@ -274,7 +336,7 @@
 }
 
 .eventTitle {
-    font-size: 0.8rem;
+    font-size: 0.5rem;
     color: var(--text-primary);
     font-weight: 700;
     margin-bottom: 2px;
@@ -308,11 +370,19 @@
     backdrop-filter: var(--glass-blur);
     border: 1px solid var(--border-main);
     border-radius: var(--radius-lg);
-    padding: 18px 20px;
+    padding: 12px 14px;
     height: 100%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.briefingContainer:hover {
+    transform: translateY(-5px);
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.1);
 }
 
 .briefingHeader {
@@ -328,6 +398,9 @@
 
 .briefingList {
     list-style: none;
+    overflow-y: auto;
+    flex: 1;
+    padding-right: 4px;
 }
 
 .briefingItem {
@@ -337,6 +410,7 @@
     margin-bottom: 12px;
     display: flex;
     gap: 12px;
+    word-break: break-word;
     animation: fadeInSlide 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
     opacity: 0;
 }
@@ -381,7 +455,9 @@
 }
 
 .whaleContainer:hover {
-    border-color: var(--border-bright);
+    transform: translateY(-5px);
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(16, 185, 129, 0.1);
 }
 
 .whaleHeader {
@@ -460,8 +536,8 @@
     backdrop-filter: blur(12px);
     border: 1px solid rgba(16, 185, 129, 0.2);
     border-radius: 16px;
-    padding: 10px 20px;
-    margin: 0 20px 4px;
+    padding: 6px 16px;
+    margin: 0 16px 2px;
     animation: fadeInScale 1s ease-out;
 }
 
@@ -473,11 +549,12 @@
     padding: 2px 8px;
     border-radius: 6px;
     letter-spacing: 0.05em;
+    animation: var(--ani-pulse);
 }
 
 .oasisMessage {
     font-family: 'Outfit', sans-serif;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-weight: 500;
     color: var(--text-primary);
     letter-spacing: -0.01em;

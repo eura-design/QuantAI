@@ -118,4 +118,43 @@
   border-radius: 50%;
   background: currentColor;
   box-shadow: 0 0 8px currentColor;
+  animation: var(--ani-pulse);
+}
+
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.langSwitch {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.langBtn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Outfit', sans-serif;
+}
+
+.langBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.active {
+  background: var(--bull) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.4);
 }

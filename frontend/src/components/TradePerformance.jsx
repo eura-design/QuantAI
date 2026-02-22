@@ -1,55 +1,55 @@
 import { useState, useEffect } from 'react'
 import styles from './TradePerformance.module.css'
 import { API } from '../config'
+import { useLanguage } from '../contexts/LanguageContext'
 
 export function TradePerformance() {
+    const { t, lang } = useLanguage()
     const [stats, setStats] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    const fetchStats = async () => {
-        try {
-            const res = await fetch(`${API.BASE_URL}/api/trades/stats`)
-            const data = await res.json()
-            setStats(data)
-        } catch (err) {
-            console.error("Stats fetch error:", err)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     useEffect(() => {
-        fetchStats()
-        const timer = setInterval(fetchStats, 60000) // 1분마다 갱신
-        return () => clearInterval(timer)
-    }, [])
+        setLoading(true)
+        fetch(`${API.TRADES_STATS}?lang=${lang}`)
+            .then(res => res.json())
+            .then(d => {
+                setStats(d)
+                setLoading(false)
+            })
+            .catch(() => setLoading(false))
+    }, [lang])
 
-    if (loading || !stats) return <div className={styles.loading}>성과 집계 중...</div>
-
-    const { wins, losses, win_rate, history } = stats
+    if (loading || !stats) return <div className={styles.loading}>{t('performance.loading')}</div>
 
     return (
         <div className={styles.container}>
             <div className={styles.header}>
-                <span className={styles.badge}>TRACK RECORD</span>
-                <h3 className={styles.title}>AI 매매 성과</h3>
+                <div className={styles.headerTitleGroup}>
+                    <div className={styles.badge}>{t('common.live')}</div>
+                    <div className={styles.title}>{t('performance.title')}</div>
+                    {stats.current_status && (
+                        <div className={`${styles.statusBadge} ${styles[stats.current_status.toLowerCase()]}`}>
+                            <span className={styles.pulseDot}></span>
+                            {t(`performance.status_labels.${stats.current_status}`)}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className={styles.statsGrid}>
                 <div className={styles.statItem}>
-                    <div className={styles.statValue}>{win_rate}%</div>
-                    <div className={styles.statLabel}>승률</div>
+                    <div className={styles.statValue}>{stats.win_rate}%</div>
+                    <div className={styles.statLabel}>{t('performance.winRate')}</div>
                 </div>
                 <div className={styles.statItem}>
-                    <div className={styles.statValue}>{wins}승</div>
-                    <div className={styles.statLabel}>수익</div>
+                    <div className={styles.statValue}>{stats.wins}</div>
+                    <div className={styles.statLabel}>{t('performance.wins')}</div>
                 </div>
                 <div className={styles.statItem}>
-                    <div className={styles.statValue}>{losses}패</div>
-                    <div className={styles.statLabel}>손실</div>
+                    <div className={styles.statValue}>{stats.losses}</div>
+                    <div className={styles.statLabel}>{t('performance.losses')}</div>
                 </div>
             </div>
-
         </div>
     )
 }

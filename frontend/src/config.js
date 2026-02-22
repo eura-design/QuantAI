@@ -2,11 +2,11 @@
 // 모든 API 주소는 이곳에서 통합 관리합니다.
 // 로컬 개발 환경과 배포 환경을 자동으로 구분합니다.
 
-const IS_PROD = import.meta.env ? import.meta.env.PROD : true;
+const IS_PROD = import.meta.env ? import.meta.env.PROD : false; // 기본값을 false로 변경
 
 const BASE_URL = IS_PROD
     ? 'https://quantai-production.up.railway.app'
-    : (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8001' : 'https://quantai-production.up.railway.app');
+    : 'http://localhost:8001';
 
 export const API = {
     BASE_URL,
@@ -18,7 +18,6 @@ export const API = {
     NEWS: `${BASE_URL}/api/news`,
     DAILY_BRIEF: `${BASE_URL}/api/daily_brief`,
     SENTIMENT: `${BASE_URL}/api/sentiment`,
-    VOTE: `${BASE_URL}/api/vote`,
     EVENTS: `${BASE_URL}/api/events`,
     HEALTH: `${BASE_URL}/api/health`,
     TRADES_STATS: `${BASE_URL}/api/trades/stats`

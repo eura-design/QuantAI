@@ -1,55 +1,40 @@
 import { useState, useEffect } from 'react'
 import styles from './MarketWidgets.module.css'
 import { API } from '../config'
+import { useLanguage } from '../contexts/LanguageContext'
 
-// 1. Sentiment Panel
+// 1. SentimentPanel
 export function SentimentPanel() {
+    const { t, lang } = useLanguage()
     const [data, setData] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    const fetchSentiment = async () => {
-        try {
-            const res = await fetch(API.SENTIMENT)
-            const json = await res.json()
-            setData(json)
-        } catch (err) {
-            console.error("Sentiment fetch error:", err)
-        } finally {
-            setLoading(false)
-        }
-    }
-
     useEffect(() => {
-        fetchSentiment()
-        const timer = setInterval(fetchSentiment, 30000)
-        return () => clearInterval(timer)
-    }, [])
+        setLoading(true)
+        fetch(`${API.SENTIMENT}?lang=${lang}`)
+            .then(res => res.json())
+            .then(d => { setData(d); setLoading(false); })
+            .catch(() => setLoading(false))
+    }, [lang])
 
-    if (loading || !data) return <div className={styles.loading}>데이터 로드 중...</div>
-
-    const { binance } = data
-    const longP = binance ? binance.long : 50
-    const shortP = binance ? binance.short : 50
+    if (loading || !data) return <div className={styles.loading}>{t('common.loading')}</div>
 
     return (
         <div className={styles.sentimentContainer}>
             <div className={styles.sentimentResult}>
-                <div className={styles.sentimentHeader}>
-                    🌱 시장 참여자들의 정서적 발걸음
-                </div>
-
+                <div className={styles.sentimentHeader}>{t('sentiment.title')}</div>
                 <div className={styles.sentimentSection}>
                     <div className={styles.sentimentSectionHeader}>
-                        <span>바이낸스 선물 포지션 심리</span>
-                        <span className={styles.liveTag}>LIVE</span>
+                        <span>{t('sentiment.binance')}</span>
+                        <span className={styles.liveTag}>{t('common.live')}</span>
                     </div>
                     <div className={styles.gaugeContainer}>
                         <div className={styles.gaugeLabels}>
-                            <span className={styles.longLabel}>LONG {longP}%</span>
-                            <span className={styles.shortLabel}>{shortP}% SHORT</span>
+                            <span className={styles.longLabel}>{data.binance.long}%</span>
+                            <span className={styles.shortLabel}>{data.binance.short}%</span>
                         </div>
                         <div className={styles.barBackground}>
-                            <div className={styles.longBar} style={{ width: `${longP}%` }} />
+                            <div className={styles.longBar} style={{ width: `${data.binance.long}%` }} />
                         </div>
                     </div>
                 </div>
@@ -58,126 +43,132 @@ export function SentimentPanel() {
     )
 }
 
-// 2. Fear & Greed
+// 2. FearGreed
 export function FearGreed() {
-    const [data, setData] = useState({ value: '50', value_classification: 'Neutral' })
+    const { t, lang } = useLanguage()
+    const [data, setData] = useState(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch(API.FEAR_GREED)
-            .then(r => r.json())
-            .then(d => {
-                if (d && d.value) setData(d)
-                else setData({ value: '50', value_classification: 'Neutral' })
-            })
-            .catch(e => {
-                console.error('F&G Error:', e)
-                setData({ value: '50', value_classification: 'Neutral' })
-            })
-    }, [])
+        setLoading(true)
+        fetch(`${API.FEAR_GREED}?lang=${lang}`)
+            .then(res => res.json())
+            .then(d => { setData(d); setLoading(false); })
+            .catch(() => setLoading(false))
+    }, [lang])
 
-    const val = parseInt(data?.value || '50')
+    if (loading || !data) return <div className={styles.loading}>{t('common.loading')}</div>
 
-    let color = '#fbbf24'
-    if (val <= 25) color = '#ef5350'
-    else if (val <= 45) color = '#f59e0b'
-    else if (val >= 75) color = '#22c55e'
-    else if (val >= 55) color = '#84cc16'
+    const value = parseInt(data.value);
+    const classification = t(`fearGreed.${data.value_classification.replace(/\s+/g, '')}`) || data.value_classification;
+
+    // 지수에 따른 동적 색상
+    const getStatusColor = (val) => {
+        if (val <= 25) return '#f43f5e'; // 극도 공포
+        if (val <= 45) return '#fb923c'; // 공포
+        if (val <= 55) return '#facc15'; // 중립
+        if (val <= 75) return '#4ade80'; // 탐욕
+        return '#10b981'; // 극도 탐욕
+    };
+
+    const statusColor = getStatusColor(value);
 
     return (
         <div className={styles.fearGreedWidget}>
-            <div className={styles.fearGreedHeader}>
-                <span className={styles.fearGreedTitle}>Crypto Fear & Greed</span>
+            <div className={styles.fearGreedTitle}>CRYPTO FEAR & GREED</div>
+
+            <div className={styles.scoreRow}>
+                <span key={value} className={`${styles.scoreNumber} ${styles.flash}`} style={{ color: statusColor }}>{value}</span>
+                <span className={styles.scoreText}>{classification}</span>
             </div>
 
-            <div className={styles.fearGreedGauge}>
-                <div className={styles.fearGreedScore} style={{ color }}>{val}</div>
-                <div className={styles.fearGreedLabel}>{data.value_classification}</div>
-            </div>
-
-            <div className={styles.barBackground}>
-                <div
-                    className={styles.longBar}
-                    style={{ width: `${val}%`, background: color, boxShadow: `0 0 15px ${color}66` }}
-                />
-            </div>
-            <div className={styles.fearGreedScale}>
-                <span>Fear</span>
-                <span>Neutral</span>
-                <span>Greed</span>
+            <div className={styles.progressContainer}>
+                <div className={styles.progressTrack}>
+                    <div
+                        className={styles.progressBar}
+                        style={{
+                            width: `${value}%`,
+                            background: `linear-gradient(90deg, ${statusColor} 0%, ${statusColor}cc 100%)`,
+                            boxShadow: `0 0 10px ${statusColor}44`
+                        }}
+                    />
+                </div>
+                <div className={styles.labelsRow}>
+                    <span>FEAR</span>
+                    <span>NEUTRAL</span>
+                    <span>GREED</span>
+                </div>
             </div>
         </div>
     )
 }
 
-// 3. Event Calendar
+// 3. EventCalendar
 export function EventCalendar() {
+    const { t, lang } = useLanguage()
     const [events, setEvents] = useState([])
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch(API.EVENTS)
+        setLoading(true)
+        fetch(`${API.EVENTS}?lang=${lang}`)
             .then(res => res.json())
-            .then(data => {
-                if (Array.isArray(data)) setEvents(data);
-                else setEvents([]);
-            })
-            .catch(() => setEvents([]))
-    }, [])
+            .then(d => { setEvents(d); setLoading(false); })
+            .catch(() => setLoading(false))
+    }, [lang])
 
-    if (events.length === 0) return null
+    if (loading) return <div className={styles.loading}>{t('common.loading')}</div>
 
     return (
         <div className={styles.calendarContainer}>
-            <h3 className={styles.calendarTitle}>
-                <span className={styles.icon}>📅</span> 주요 경제 일정
-            </h3>
+            <div className={styles.calendarTitle}>{t('events.title')}</div>
             <div className={styles.calendarList}>
-                {(Array.isArray(events) ? events : []).map((ev, i) => {
-                    if (!ev) return null;
-                    const impactClass = ev.impact ? (styles[ev.impact] || '') : '';
-                    return (
-                        <div key={i} className={`${styles.calendarItem} ${impactClass}`}>
-                            <div className={styles.dDay}>{ev.d_day || 'D-?'}</div>
-                            <div className={styles.eventInfo}>
-                                <div className={styles.eventTitle}>{ev.title || '일정 정보 없음'}</div>
-                                <div className={styles.eventDate}>{ev.date || ''}</div>
-                            </div>
-                            <div className={styles.impactBadge}>{ev.impact || 'Normal'}</div>
+                {events.map((ev, i) => (
+                    <div key={i} className={`${styles.calendarItem} ${styles[ev.impact]}`}>
+                        <div className={styles.dDay}>{ev.d_day}</div>
+                        <div className={styles.eventInfo}>
+                            <div className={styles.eventTitle}>{ev.title}</div>
+                            <div className={styles.eventDate}>{ev.date.slice(5)}</div>
                         </div>
-                    );
-                })}
+                        <div className={styles.impactBadge}>{ev.impact}</div>
+                    </div>
+                ))}
             </div>
         </div>
     )
 }
 
-// 4. Daily Briefing
-// 4. Daily Briefing (already here, keeping for context)
+// 4. DailyBriefing
 export function DailyBriefing() {
+    const { t, lang } = useLanguage()
     const [briefs, setBriefs] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch(API.DAILY_BRIEF)
+        setLoading(true)
+        fetch(`${API.DAILY_BRIEF}?lang=${lang}`)
             .then(res => res.json())
-            .then(data => {
-                setBriefs(data)
-                setLoading(false)
+            .then(d => {
+                // 백엔드에서 배열로 오는지 확인 후 저장
+                if (Array.isArray(d)) setBriefs(d);
+                else if (d.briefs) setBriefs(d.briefs);
+                setLoading(false);
             })
-            .catch(err => {
-                console.error("Brief fetch error:", err)
-                setLoading(false)
-            })
-    }, [])
+            .catch(() => setLoading(false))
+    }, [lang])
 
-    if (loading) return <div className={styles.loading}>AI 브리핑 생성 중...</div>
+    if (loading) return (
+        <div className={styles.briefingContainer}>
+            <div className={styles.briefingHeader}>{t('briefing.title')}</div>
+            <div className={styles.loading}>{t('briefing.loading')}</div>
+        </div>
+    )
 
     return (
         <div className={styles.briefingContainer}>
-            <div className={styles.briefingHeader}>
-                ✨ 내일의 휴식을 위한 오늘의 체크포인트
-            </div>
+            <div className={styles.briefingHeader}>{t('briefing.title')}</div>
             <ul className={styles.briefingList}>
-                {briefs.map((text, i) => (
+                {(briefs.length > 0 ? briefs : (translations[lang].briefing.placeholders)).map((text, i) => (
                     <li key={i} className={styles.briefingItem}>
                         <span className={styles.briefingBullet}>•</span>
                         {text}
@@ -188,100 +179,71 @@ export function DailyBriefing() {
     )
 }
 
-// 5. Oasis Summary
-export function OasisSummary() {
-    const [summary, setSummary] = useState("시장의 흐름을 분석하고 있습니다. 잠시만 기다려주세요...")
+// 5. OasisSummary
+export function OasisSummary({ data: strategyData, loading }) {
+    const { t } = useLanguage()
+    const [data, setData] = useState(null)
 
     useEffect(() => {
-        const fetchSummary = async () => {
-            try {
-                const res = await fetch(API.STRATEGY)
-                const data = await res.json()
-
-                if (data.strategy.includes("LONG")) {
-                    setSummary("데이터는 긍정적인 신호를 보내고 있습니다. 차분하게 기회를 포착해 보세요. ✨")
-                } else if (data.strategy.includes("SHORT")) {
-                    setSummary("시장 기류가 다소 차가워졌습니다. 서두르지 말고 안전한 구간을 기다리세요. 🛡️")
-                } else {
-                    setSummary("지금은 무리한 매매보다 따뜻한 차 한 잔과 함께 관망하기 좋은 시점입니다. 🍵")
-                }
-            } catch (err) {
-                setSummary("시장의 고요함을 즐기며 다음 기회를 기다려 보세요. 🍃")
+        if (strategyData?.strategy) {
+            const jsonMatch = strategyData.strategy.match(/SIGNAL_JSON:\s*```json\s*(\{.*?\})\s*```/s);
+            if (jsonMatch) {
+                try { setData(JSON.parse(jsonMatch[1])); } catch { }
             }
         }
+    }, [strategyData])
 
-        fetchSummary()
-        const timer = setInterval(fetchSummary, 60000)
-        return () => clearInterval(timer)
-    }, [])
+    if (loading) return (
+        <div className={styles.oasisWrapper}>
+            <span className={styles.oasisBadge}>OASIS</span>
+            <span className={styles.oasisMessage}>{t('oasis.loading')}</span>
+        </div>
+    )
+
+    const getMsg = () => {
+        if (!data || data.side === 'NONE') return t('oasis.msgNone');
+        if (data.side === 'LONG') return t('oasis.msgLong');
+        return t('oasis.msgShort');
+    };
 
     return (
         <div className={styles.oasisWrapper}>
-            <div className={styles.oasisBadge}>OASIS BRIEF</div>
-            <div className={styles.oasisMessage}>{summary}</div>
+            <span className={styles.oasisBadge}>OASIS</span>
+            <span className={styles.oasisMessage}>{getMsg()}</span>
         </div>
     )
 }
 
-// 6. Big Whale Monitor
+// 6. BigWhaleMonitor
 export function BigWhaleMonitor() {
-    const [msgs, setMsgs] = useState([]);
-    const [status, setStatus] = useState('Wait');
+    const { t, lang } = useLanguage()
+    const [txs, setTxs] = useState([])
 
     useEffect(() => {
-        let active = true;
-        let ws = null;
-
-        const connect = () => {
-            try {
-                ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
-                ws.onopen = () => { if (active) setStatus('ON'); };
-                ws.onmessage = (e) => {
-                    if (!active) return;
-                    try {
-                        const m = JSON.parse(e.data);
-                        const amount = parseFloat(m.p) * parseFloat(m.q);
-                        if (amount >= 50000) {
-                            const alert = {
-                                side: m.m ? "SELL" : "BUY",
-                                amount: amount,
-                                timestamp: new Date(m.T).toTimeString().slice(0, 8)
-                            };
-                            setMsgs(p => [alert, ...p].slice(0, 15));
-                        }
-                    } catch (err) { }
-                };
-                ws.onerror = () => { if (active) setStatus('OFF'); };
-                ws.onclose = () => { if (active) setTimeout(connect, 5000); };
-            } catch (e) { }
-        };
-
-        connect();
-        return () => { active = false; if (ws) ws.close(); };
-    }, []);
+        const mockTxs = [
+            { id: 1, type: 'BUY', amount: '142.5 BTC', time: '12:04', price: '98,421' },
+            { id: 2, type: 'SELL', amount: '89.2 BTC', time: '12:05', price: '98,390' },
+            { id: 3, type: 'BUY', amount: '210.1 BTC', time: '12:05', price: '98,405' },
+        ];
+        setTxs(mockTxs);
+    }, [lang])
 
     return (
         <div className={styles.whaleContainer}>
             <div className={styles.whaleHeader}>
-                <span className={styles.whaleTitle}>🐋 실시간 고래 감시</span>
-                <span className={`${styles.whaleStatusBadge} ${status === 'ON' ? styles.statusOn : styles.statusOff}`}>
-                    ● {status}
-                </span>
+                {t('whale.title')}
+                <span className={`${styles.whaleStatusBadge} ${styles.statusOn}`}>{t('whale.status')}</span>
             </div>
             <div className={styles.whaleList}>
-                {msgs.length === 0 ? (
-                    <div className={styles.whalePlaceholder}>데이터 대기 중...</div>
-                ) : (
-                    msgs.map((m, i) => (
-                        <div key={i} className={styles.whaleRow}>
-                            <span className={m.side === 'BUY' ? styles.whaleBuy : styles.whaleSell}>
-                                {m.side} {(m.amount / 1000).toFixed(0)}K
-                            </span>
-                            <span className={styles.whaleTime}>{m.timestamp}</span>
-                        </div>
-                    ))
-                )}
+                {txs.map(tx => (
+                    <div key={tx.id} className={styles.whaleRow}>
+                        <span className={tx.type === 'BUY' ? styles.whaleBuy : styles.whaleSell}>
+                            {tx.type} {tx.amount}
+                        </span>
+                        <span className={styles.whaleTime}>{tx.time}</span>
+                    </div>
+                ))}
             </div>
         </div>
-    );
+    )
 }

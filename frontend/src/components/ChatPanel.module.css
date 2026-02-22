@@ -9,6 +9,13 @@
     min-height: 0;
     overflow: hidden;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition: var(--transition);
+}
+
+.panel:hover {
+    transform: translateY(-5px);
+    border-color: rgba(37, 99, 235, 0.3);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(37, 99, 235, 0.1);
 }
 
 .header {
