@@ -33,7 +33,6 @@ export function FearGreed() {
         <div className={styles.widget}>
             <div className={styles.header}>
                 <span className={styles.title}>Crypto Fear & Greed</span>
-                <span className={styles.refresh} onClick={() => location.reload()}>↻</span>
             </div>
 
             <div className={styles.gaugeContainer}>

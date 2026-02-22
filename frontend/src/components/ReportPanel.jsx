@@ -12,7 +12,6 @@ export function ReportPanel({ data, loading, error, onRefresh }) {
         <div className={styles.panel}>
             <div className={styles.panelHeader}>
                 <div><div className={styles.panelTitle}>AI 분석 리포트</div>{data && <div className={styles.generatedAt}>시각: {data.generated_at}</div>}</div>
-                <button className={styles.refreshBtn} onClick={onRefresh} disabled={loading}><span className={loading ? styles.spin : ''}>↻</span></button>
             </div>
             {data && (
                 <div className={styles.metricsRow}>

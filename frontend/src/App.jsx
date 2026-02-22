@@ -92,7 +92,7 @@ function App() {
           </div>
           <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '16px', minHeight: 0 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ flex: 1.5, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ flex: 1.1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
                 <ErrorBoundary>
                   <SentimentPanel />
                 </ErrorBoundary>

@@ -243,7 +243,7 @@ def get_sentiment():
         
     ls = fetch_long_short_ratio()
     ls_cache["data"] = ls
-    ls_cache["expiry"] = now + timedelta(minutes=5)
+    ls_cache["expiry"] = now + timedelta(minutes=1)
     return {"binance": ls, "votes": votes}
 
 @app.post("/api/vote")

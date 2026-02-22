@@ -26,9 +26,26 @@ export function SentimentPanel() {
 
     if (loading || !data) return <div className={styles.loading}>데이터 로드 중...</div>
 
-    const { binance } = data
+    const { binance, votes } = data
     const longP = binance ? binance.long : 50
     const shortP = binance ? binance.short : 50
+
+    const bullP = votes && votes.total > 0 ? Math.round((votes.bull / votes.total) * 100) : 50
+    const bearP = 100 - bullP
+
+    const handleVote = async (side) => {
+        try {
+            const res = await fetch(API.VOTE, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ side })
+            })
+            const newVotes = await res.json()
+            setData(prev => ({ ...prev, votes: newVotes }))
+        } catch (err) {
+            console.error("Vote error:", err)
+        }
+    }
 
     return (
         <div className={styles.container}>
@@ -50,6 +67,28 @@ export function SentimentPanel() {
                         <div className={styles.barBackground}>
                             <div className={styles.longBar} style={{ width: `${longP}%` }} />
                         </div>
+                    </div>
+                </div>
+
+                <div className={styles.divider} />
+
+                <div className={styles.section}>
+                    <div className={styles.sectionHeader}>
+                        <span>커뮤니티 심리 (오늘)</span>
+                        <span className={styles.timerTag}>{votes?.total || 0}명 참여</span>
+                    </div>
+                    <div className={styles.gaugeContainer}>
+                        <div className={styles.labels}>
+                            <span className={styles.longLabel}>BULL {bullP}%</span>
+                            <span className={styles.shortLabel}>{bearP}% BEAR</span>
+                        </div>
+                        <div className={styles.barBackground}>
+                            <div className={styles.bullBar} style={{ width: `${bullP}%` }} />
+                        </div>
+                    </div>
+                    <div className={styles.voteButtons}>
+                        <button className={styles.bullBtnBig} onClick={() => handleVote('bull')}>BULL 🚀</button>
+                        <button className={styles.bearBtnBig} onClick={() => handleVote('bear')}>BEAR 📉</button>
                     </div>
                 </div>
             </div>
