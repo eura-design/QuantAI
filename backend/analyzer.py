@@ -3,6 +3,7 @@ import sys
 import json
 import warnings
 import re
+import threading
 from datetime import datetime, timedelta
 
 import pandas as pd
@@ -34,6 +35,25 @@ SYMBOL = 'BTC/USDT'
 TIMEFRAMES = ['1h', '4h', '1d']
 LIMIT = 500
 
+# 글로벌 락 및 인 메모리 캐시 (동시 요청 방지)
+_locks = {
+    "news": threading.Lock(),
+    "brief": threading.Lock(),
+    "strategy": threading.Lock()
+}
+_mem_cache = {}
+
+def get_from_mem(key):
+    val = _mem_cache.get(key)
+    if val and val['expiry'] > datetime.now():
+        return val['data']
+    return None
+
+def set_to_mem(key, data, minutes=5):
+    _mem_cache[key] = {
+        "data": data,
+        "expiry": datetime.now() + timedelta(minutes=minutes)
+    }
 
 fetcher = MarketDataFetcher(SYMBOL)
 
@@ -90,17 +110,10 @@ def fetch_market_info():
     """시장 컨텍스트 수집 (Core Fetcher 사용)"""
     return fetcher.fetch_market_context()
 
-_exchange_ls = None
-
 def fetch_long_short_ratio():
-    """바이낸스 선물 롱/숏 비율 데이터 수집 (requests 직접 호출로 안정성 확보)"""
-    import requests
-    
+    """바이낸스 선물 롱/숏 비율 데이터 수집"""
     symbol = SYMBOL.replace('/', '')
     periods = ['5m', '15m', '1h']
-    
-    # 1. Global Long/Short Account Ratio (계정 수 기준)
-    # 2. Top Trader Long/Short Account Ratio (상위 트레이더 기준)
     endpoints = [
         "https://fapi.binance.com/futures/data/globalLongShortAccountRatio",
         "https://fapi.binance.com/futures/data/topLongShortAccountRatio"
@@ -111,317 +124,168 @@ def fetch_long_short_ratio():
             try:
                 params = {'symbol': symbol, 'period': pd, 'limit': 1}
                 response = requests.get(url, params=params, timeout=5)
-                
                 if response.status_code == 200:
                     data_list = response.json()
-                    if data_list and len(data_list) > 0:
+                    if data_list:
                         data = data_list[0]
-                        l_acc = float(data.get('longAccount', 0))
-                        s_acc = float(data.get('shortAccount', 0))
-                        
-                        if l_acc > 0 or s_acc > 0:
-                            # 합계가 1이 아닐 가능성 대비 정규화
-                            total = l_acc + s_acc
-                            long_p = round((l_acc / total) * 100, 1)
-                            short_p = round(100 - long_p, 1)
-                            return {"long": long_p, "short": short_p}
-            except Exception as e:
-                print(f"[ERROR] Fetch LS failed ({url}, {pd}): {e}")
-                continue
-
-    # 모든 시도 실패 시에만 fallback
+                        l = float(data.get('longAccount', 0))
+                        s = float(data.get('shortAccount', 0))
+                        if l+s > 0:
+                            return {"long": round(l/(l+s)*100, 1), "short": round(s/(l+s)*100, 1)}
+            except: continue
     return {"long": 51.4, "short": 48.6}
 
-def fetch_crypto_news(lang='ko'):
-    """실시간 뉴스 수집 (CoinDesk RSS 사용 및 1시간 캐시/번역 적용)"""
-    import json
+def fetch_crypto_news(lang='ko', translate=True):
+    """실시간 뉴스 수집 (중복 요청 방지 및 최적화)"""
     now = datetime.now()
-    cache_file = f"news_cache_{lang}.json"
+    cache_key = f"news_{lang}_{translate}"
+    
+    # 1. 인 메모리 캐시 확인
+    m_cache = get_from_mem(cache_key)
+    if m_cache: return m_cache
 
-    # 1. 파일 캐시 확인
+    # 2. 파일 캐시 확인
+    cache_file = f"news_cache_{lang}_{translate}.json"
     if os.path.exists(cache_file):
         try:
             with open(cache_file, 'r', encoding='utf-8') as f:
-                cache = json.load(f)
-                expiry = datetime.fromisoformat(cache['expiry'])
-                if expiry > now:
-                    return cache['data']
-        except:
-            pass
+                c = json.load(f)
+                if datetime.fromisoformat(c['expiry']) > now:
+                    return c['data']
+        except: pass
 
-    # 2. 새로운 뉴스 수집
-    rss_url = "https://www.coindesk.com/arc/outboundfeeds/rss/"
-    try:
-        feed = feedparser.parse(rss_url)
-        raw_news = [entry.title for entry in feed.entries[:5]]
+    # 3. 데이터 갱신 (락 사용)
+    with _locks["news"]:
+        # 락 대기 중 다른 스레드가 먼저 갱신했을 수 있으므로 다시 확인
+        m_cache = get_from_mem(cache_key)
+        if m_cache: return m_cache
         
-        if not raw_news:
-            raise ValueError("No news found")
+        try:
+            feed = feedparser.parse("https://www.coindesk.com/arc/outboundfeeds/rss/")
+            raw_news = [e.title for e in feed.entries[:5]]
+            if not raw_news: raise ValueError("No news")
             
-        final_news = raw_news
-        # 한국어 요청인 경우 번역 수행
-        if lang == 'ko':
-            try:
-                titles_text = "\n".join(raw_news)
-                prompt = f"Translate and summarize these Bitcoin news titles into concise Korean (one line per news):\n{titles_text}"
-                res = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-                translated = res.text.strip().split('\n')
-                final_news = [t.strip().replace('*', '').replace('-', '').strip() for t in translated if t.strip()][:5]
-            except Exception as e:
-                print(f"[ERROR] AI News Translation failed: {e}")
-                # 세이프가드 제거: 번역 실패 시 빈 목록 반환하여 혼선 방지
-                return [] 
-
-        # 캐시 저장
-        with open(cache_file, 'w', encoding='utf-8') as f:
-            json.dump({
-                "data": final_news,
-                "expiry": (now + timedelta(hours=1)).isoformat()
-            }, f, ensure_ascii=False)
+            final_news = raw_news
+            if lang == 'ko' and translate:
+                try:
+                    res = client.models.generate_content(
+                        model='gemini-flash-latest', 
+                        contents=f"Translate and summarize these 5 Bitcoin news titles into concise Korean (one line per news):\n{chr(10).join(raw_news)}"
+                    )
+                    translated = [line.strip().replace('*','').replace('-','').strip() for line in res.text.strip().split('\n') if line.strip()]
+                    final_news = translated[:5] if len(translated) >= 3 else raw_news
+                except Exception as e:
+                    print(f"[DEBUG] News Translation Fail: {e}")
+                    final_news = raw_news # 폴백
             
-        return final_news
-    except Exception as e:
-        print(f"[ERROR] News fetch/process failed: {e}")
-        return []
-
-# 파일 기반 캐시 (서버 재시작 대응)
-BRIEF_CACHE_FILE = "brief_cache.json"
+            # 결과 저장
+            set_to_mem(cache_key, final_news, minutes=60)
+            with open(cache_file, 'w', encoding='utf-8') as f:
+                json.dump({"data": final_news, "expiry": (now + timedelta(hours=1)).isoformat()}, f, ensure_ascii=False)
+            return final_news
+        except Exception as e:
+            print(f"[ERROR] News fetch failed: {e}")
+            return []
 
 def fetch_ai_daily_brief(lang='ko'):
-    """AI 가 생성한 일일 뉴스 요약 (1시간 파일 캐시 적용, 다국어 지원)"""
-    import json
-    
+    """AI 뉴스 요약 (중복 요청 방지 및 최적화)"""
     now = datetime.now()
+    cache_key = f"brief_{lang}"
+    m_cache = get_from_mem(cache_key)
+    if m_cache: return m_cache
+
     cache_file = f"brief_cache_{lang}.json"
-    
-    # 1. 파일 캐시 로드 시도
     if os.path.exists(cache_file):
         try:
             with open(cache_file, 'r', encoding='utf-8') as f:
-                cache = json.load(f)
-                expiry = datetime.fromisoformat(cache['expiry'])
-                if expiry > now:
-                    return cache['data']
-        except:
-            pass
+                c = json.load(f)
+                if datetime.fromisoformat(c['expiry']) > now: return c['data']
+        except: pass
 
-    # 2. 새로운 브리핑 생성
-    news = fetch_crypto_news(lang=lang)
-    sentiment = fetch_long_short_ratio()
-    events = get_economic_events(lang=lang)
-    
-    news_text = "\n".join([f"- {n}" for n in news])
-    event_text = "\n".join([f"- {e['title']} ({e['d_day']})" for e in events])
-    
-    prompt_ko = f"""
-    당신은 'QuantAI'의 수석 분석가입니다. 다음 **영문 뉴스 데이터** 및 시장 지표를 종합하여 오늘 오전의 **비트코인 핵심 브리핑 3줄**을 작성하세요.
-    - **반드시 한국어(Korean)**로 작성할 것
-    - 입력 뉴스가 영어이므로, 내용을 파악하여 한국어로 핵심만 요약할 것
-    - 마크다운 기호를 쓰지 말 것 (텍스트만 3줄)
-    - 줄당 40자 이내로 핵심만 찌를 것
-    
-    [데이터]
-    1. 뉴스(English): {news_text}
-    2. 시장심리: 롱 {sentiment['long']}% vs 숏 {sentiment['short']}%
-    3. 일정: {event_text}
-    """
-    
-    prompt_en = f"""
-    You are the Senior Analyst at 'QuantAI'. Based on the following data, write a **3-line Bitcoin core briefing** for this morning.
-    - Write in English.
-    - Do not use markdown symbols (3 lines of plain text only).
-    - Keep each line under 50 characters, focus on the core.
-    
-    [Data]
-    1. News: {news_text}
-    2. Sentiment: Long {sentiment['long']}% vs Short {sentiment['short']}%
-    3. Events: {event_text}
-    """
-    
-    prompt = prompt_en if lang == 'en' else prompt_ko
+    with _locks["brief"]:
+        m_cache = get_from_mem(cache_key)
+        if m_cache: return m_cache
 
-    try:
-        response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-        briefs = response.text.strip().split('\n')
-        clean_briefs = [b.replace('*', '').replace('-', '').replace('•', '').strip() for b in briefs if b.strip()]
-        result = clean_briefs[:3]
+        # 번역되지 않은 영문 뉴스를 사용하여 AI 처리 비용 절감
+        news = fetch_crypto_news(lang='en', translate=False)
+        sentiment = fetch_long_short_ratio()
+        events = get_economic_events(lang=lang)
         
-        if len(result) >= 1:
-            # 파일 캐시 저장
+        prompt = (
+            f"Write a 3-line Bitcoin briefing in {'Korean' if lang=='ko' else 'English'}. "
+            f"Input News: {news}. Sentiment: L {sentiment['long']}% vs S {sentiment['short']}%. Events: {events}. "
+            "Keep it under 40 chars per line, plain text only."
+        )
+
+        try:
+            res = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+            result = [b.replace('*','').replace('-','').strip() for b in res.text.strip().split('\n') if b.strip()][:3]
+            if not result: result = ["시장 분석 데이터를 불러올 수 없습니다."] if lang=='ko' else ["Could not load briefing."]
+            
+            set_to_mem(cache_key, result, minutes=60)
             with open(cache_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    "data": result,
-                    "expiry": (now + timedelta(hours=1)).isoformat()
-                }, f, ensure_ascii=False)
+                json.dump({"data": result, "expiry": (now + timedelta(hours=1)).isoformat()}, f, ensure_ascii=False)
             return result
-        raise ValueError("Invalid AI Response")
-    except Exception as e:
-        print(f"[ERROR] AI Daily Briefing failed: {e}")
-        # 세이프가드 제거: 실패 시 빈 목록 반환
-        return []
+        except Exception as e:
+            print(f"[ERROR] Briefing failed: {e}")
+            return []
 
 def get_economic_events(lang='ko'):
-    """주요 거시경제 일정 데이터 (실시간 날짜 기준 D-Day 계산 및 필터링)"""
-    now = datetime.now()
-    today = now.date()
-    
-    # 원본 일정 데이터 (일정 추가/수정은 여기에서만 수행)
-    raw_events = [
-        {"ko": "미국 CPI(소비자물가지수) 발표", "en": "US CPI Release", "date": "2026-02-21", "impact": "High"},
+    """경제 일정 (하드코딩된 데이터 기반)"""
+    today = datetime.now().date()
+    raw = [
+        {"ko": "미국 CPI 발표", "en": "US CPI Release", "date": "2026-02-21", "impact": "High"},
         {"ko": "FOMC 정례 회의", "en": "FOMC Meeting", "date": "2026-02-24", "impact": "Critical"},
-        {"ko": "미국 신규 실업수당 청구건수", "en": "US Initial Jobless Claims", "date": "2026-02-26", "impact": "Medium"},
-        {"ko": "홍콩 스테이블코인 라이선스 발표", "en": "HK Stablecoin License Announcement", "date": "2026-03-02", "impact": "Medium"},
-        {"ko": "미국 비농업 고용지수(NFP) 발표", "en": "US Non-farm Payrolls (NFP)", "date": "2026-03-06", "impact": "High"}
+        {"ko": "미국 실업수당 청구", "en": "Jobless Claims", "date": "2026-02-26", "impact": "Medium"},
+        {"ko": "비농업 고용지수 NFP", "en": "US NFP Report", "date": "2026-03-06", "impact": "High"}
     ]
-    
-    processed_events = []
-    
-    for ev in raw_events:
-        ev_date = datetime.strptime(ev['date'], "%Y-%m-%d").date()
-        diff = (ev_date - today).days
+    res = []
+    for ev in raw:
+        dt = datetime.strptime(ev['date'], "%Y-%m-%d").date()
+        diff = (dt - today).days
+        if diff < 0: continue
+        dday = "Today" if diff == 0 else f"D-{diff}"
+        res.append({"title": ev[lang] if lang in ev else ev['en'], "d_day": dday, "impact": ev['impact'], "date": ev['date']})
+    return sorted(res, key=lambda x: x['date'])[:4]
+
+def get_ai_strategy(lang='ko'):
+    """종합 전략 리포트 (중복 요청 방지 및 최적화)"""
+    # Strategy는 main.py에서 DB 캐싱을 수행하므로 여기서는 중복 AI 호출 방지만 집중
+    with _locks["strategy"]:
+        fr, oi = fetch_market_info()
+        news = fetch_crypto_news(lang='en', translate=False) # 영문 원본 사용 (토큰 절약 및 속도)
+        events = get_economic_events(lang=lang)
         
-        # 날짜별 상태 설정
-        if diff < 0:
-            # 과거 일정은 표시하지 않음 (또는 필요시 '발표완료' 등으로 표시)
-            continue
-        elif diff == 0:
-            d_day = "Today"
-        else:
-            d_day = f"D-{diff}"
-            
-        processed_events.append({
-            "title": ev['en'] if lang == 'en' else ev['ko'],
-            "d_day": d_day,
-            "impact": ev['impact'],
-            "date": ev['date']
-        })
-        
-    # 날짜순 정렬 후 상위 3~4개만 반환
-    processed_events.sort(key=lambda x: x['date'])
-    return processed_events[:4]
+        news_str = "\n".join([f"- {n}" for n in news])
+        event_str = "\n".join([f"- {e['title']} ({e['d_day']})" for e in events])
 
-
-def get_ai_strategy(lang='ko') -> dict:
-    fr, oi = fetch_market_info()
-    news = fetch_crypto_news(lang=lang)
-    events = get_economic_events(lang=lang)
-
-    news_str = "\n".join([f"- {n}" for n in news])
-    event_str = "\n".join([f"- {e['title']} ({e['d_day']})" for e in events])
-
-    prompt_ko = f"""
-    당신은 'QuantAI'라는 비트코인 전문 퀀트 트레이더입니다. 
-    다음의 **기술적 분석**과 **실시간 뉴스/이벤트**를 결합하여 **반드시 한국어(Korean)**로 입체적인 리포트를 작성하세요.
-    
-    [실시간 시장 데이터]
-    - 펀딩비: {fr:.4f}% | 미결제약정(OI): {oi:,.0f}
-    
-    [최신 주요 뉴스]
-    {news_str}
-    
-    [예정된 주요 일정]
-    {event_str}
-    """
-
-    prompt_en = f"""
-    You are a professional Bitcoin quant trader named 'QuantAI'.
-    Combine the following **technical analysis** and **real-time news/events** to write a comprehensive report **strictly in English**.
-    
-    [Real-time Market Data]
-    - Funding Rate: {fr:.4f}% | Open Interest (OI): {oi:,.0f}
-    
-    [Latest Key News]
-    {news_str}
-    
-    [Upcoming Key Events]
-    {event_str}
-    """
-    
-    prompt = prompt_en if lang == 'en' else prompt_ko
-    
-    latest_price = 0.0
-    for tf in TIMEFRAMES:
-        df = fetch_data(tf)
-        if df.empty: continue
-        res = analyze_data_advanced(df)
-        latest_price = res['close']
-        if lang == 'en':
-            prompt += f"""
-            [{tf} Timeframe Data]
-            - Price: {res['close']:.2f} | VWAP: {res['vwap']:.2f}
-            - POC: {res['vp']['poc']:.2f} | Sweep: {res['lq_sweep']}
-            - ADX: {res['adx']:.2f} | RSI: {res['rsi']:.2f} | SMC: {res['smc']}
-            """
-        else:
-            prompt += f"""
-            [{tf} 타임프레임 데이터]
-            - 현재가: {res['close']:.2f} | VWAP: {res['vwap']:.2f}
-            - POC: {res['vp']['poc']:.2f} | 휩소: {res['lq_sweep']}
-            - ADX: {res['adx']:.2f} | RSI: {res['rsi']:.2f} | SMC: {res['smc']}
-            """
-
-    if lang == 'en':
-        prompt += """
-        [Strategy Instructions]
-        1. **Fundamental + Technical**: Include the impact of current news (funding rates, regulation) on market sentiment.
-        2. **Entry/Exit Strategy**: Suggest entry/stop targets considering volatility around news/events.
-        
-        [Report Format]
-        1. **Market Summary (3-line summary)**: Synthesis of technicals and news.
-        2. **Trading Strategy**: [LONG / SHORT / NEUTRAL]
-        3. **Guide (Price)**: Entry, Take Profit, Stop Loss.
-        4. **Key Rationales**: (1) Technical basis (2) Fundamental/Event basis.
-        
-        [IMPORTANT]
-        At the end of the report, strictly include the following format for tracking (numbers only):
-        SIGNAL_JSON:
-        ```json
-        {"side": "LONG" or "SHORT" or "NONE", "entry": 12345.6, "tp": 12345.6, "sl": 12345.6}
-        ```
+        prompt = f"""
+        Act as QuantAI, a Bitcoin Expert Trader. Write a report in {'Korean' if lang=='ko' else 'English'}.
+        Data: Funding {fr:.4f}%, OI {oi:,}
+        News: {news_str}
+        Events: {event_str}
         """
-    else:
-        prompt += """
-        [전략 수립 지시사항]
-        1. **Fundamental + Technical**: 기술적 분석뿐만 아니라 현재 뉴스(펀딩비 변화, 규제 이슈)가 시장 심리에 미치는 영향을 분석에 포함하세요.
-        2. **Entry/Exit Strategy**: 뉴스 발표 전후의 변동성을 고려한 진입/손절가를 제시하세요.
-        
-        [작성 양식]
-        1. **시장 종합 분석 (3줄 요약)**: 기술적 지표와 뉴스를 결합한 시황 분석
-        2. **매매 전략**: [롱 / 숏 / 관망]
-        3. **가이드 (가격)**: 진입가, 목표가, 손절가
-        4. **핵심 근거**: (1) 기술적 근거 (2) 펀더멘탈(뉴스/이벤트) 근거
-        
-        [중요]
-        리포트의 가장 마지막에 가상 매매 추적을 위해 다음 형식을 반드시 포함하세요. (숫자만 사용)
-        SIGNAL_JSON:
-        ```json
-        {"side": "LONG" 또는 "SHORT" 또는 "NONE", "entry": 12345.6, "tp": 12345.6, "sl": 12345.6}
-        ```
+
+        # OHLCV 데이터 추가
+        latest_price = 0.0
+        for tf in TIMEFRAMES:
+            df = fetch_data(tf)
+            if df.empty: continue
+            res = analyze_data_advanced(df)
+            latest_price = res['close']
+            prompt += f"\n[{tf}] Price:{res['close']} RSI:{res['rsi']:.1f} SMC:{res['smc']}"
+
+        prompt += f"""
+        \nFormat: 1.Summary(3 lines) 2.Strategy[LONG/SHORT/NEUTRAL] 3.Guide(Entry/TP/SL) 4.Rationale
+        End with: SIGNAL_JSON: ```json {{"side": "LONG/SHORT/NONE", "entry": 0.0, "tp": 0.0, "sl": 0.0}} ```
         """
-    
-    try:
-        response = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
-        strategy_text = response.text
-        
-        # 정규표현식을 사용한 더 안전한 JSON 추출
-        json_match = re.search(r'SIGNAL_JSON:\s*```json\s*(\{.*?\})\s*```', strategy_text, re.DOTALL)
-        if json_match:
-             # 이후 main.py에서 이 마커를 통해 파싱하므로 형식을 유지
-             pass
-             
-    except Exception as e:
-        if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-            err_msg = "현재 AI 분석 할당량이 일시적으로 소진되었습니다. 약 1시간 뒤에 다시 시도해주세요." if lang == 'ko' else "AI analysis quota exhausted. Please try again in an hour."
-        else:
-            err_msg = f"AI 분석 중 오류가 발생했습니다: {e}" if lang == 'ko' else f"AI Analysis Error: {e}"
-        strategy_text = err_msg
-    
-    return {
-        "price": latest_price,
-        "strategy": strategy_text,
-        "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        "funding_rate": fr,
-        "open_interest": oi,
-        "news": news,
-        "events": events
-    }
+
+        try:
+            res = client.models.generate_content(model='gemini-flash-latest', contents=prompt)
+            return {
+                "price": latest_price, "strategy": res.text, "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "funding_rate": fr, "open_interest": oi, "news": news, "events": events
+            }
+        except Exception as e:
+            msg = "할당량 초과" if "429" in str(e) else f"Error: {e}"
+            return {"price": latest_price, "strategy": msg, "generated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S'), "funding_rate": fr, "open_interest": oi, "news": [], "events": []}

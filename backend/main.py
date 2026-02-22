@@ -120,26 +120,21 @@ async def strategy(lang: str = "ko"):
             
     try:
         res = get_ai_strategy(lang=lang)
-        # 에러 메시지가 포함되어 있지 않은 경우에만 신호 추출 시도
-        if not any(msg in res['strategy'] for msg in ["오류", "Error", "소진", "exhausted"]):
-            try:
-                if "SIGNAL_JSON:" in res['strategy']:
+        # 에러 발생 여부와 상관없이 무조건 저장하여 1시간 동안 재시도 방지
+        if res:
+             # 신호 추출 (정상적인 경우에만)
+            if "SIGNAL_JSON:" in res['strategy']:
+                try:
                     json_part = res['strategy'].split("SIGNAL_JSON:")[1].strip()
                     json_part = json_part.replace('```json', '').replace('```', '').strip()
                     signal = json.loads(json_part)
                     
                     active = TradeRepository.get_active_trade()
-                    if active:
-                        print(f"[TRADE] Active position exists. New signal ignored.")
-                    elif signal['side'] != 'NONE':
+                    if not active and signal['side'] != 'NONE':
                         TradeRepository.upsert_pending_trade(signal['side'], signal['entry'], signal['tp'], signal['sl'])
-                        print(f"[TRADE] PENDING signal processed: {signal['side']} at {signal['entry']}")
-                        trade_stats_cache["needs_update"] = True 
-                    else:
+                    elif signal['side'] == 'NONE':
                         TradeRepository.delete_pending_trades()
-                        print(f"[TRADE] Signal is NONE. Any pending orders removed.")
-            except Exception as e:
-                print(f"[ERROR] Signal extraction failed: {e}")
+                except: pass
 
             StrategyRepository.add_strategy(
                 res['price'], res['strategy'], res['generated_at'], 
@@ -148,7 +143,8 @@ async def strategy(lang: str = "ko"):
         return res
     except Exception as e:
         print(f"[ERROR] Strategy fetch failed: {e}")
-        return prev_row if prev_row else {"strategy": "⚠️ 데이터 수집 중..."}
+        fallback = prev_row if prev_row else {"strategy": "⚠️ 시스템 점검 중..."}
+        return fallback
 
 @app.get("/api/fear_greed")
 def fear_greed():

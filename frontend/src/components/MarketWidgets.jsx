@@ -75,7 +75,7 @@ export function FearGreed() {
 
     return (
         <div className={styles.fearGreedWidget}>
-            <div className={styles.fearGreedTitle}>CRYPTO FEAR & GREED</div>
+            <div className={styles.fearGreedTitle}>{t('fearGreed.title')}</div>
 
             <div className={styles.scoreRow}>
                 <span key={value} className={`${styles.scoreNumber} ${styles.flash}`} style={{ color: statusColor }}>{value}</span>
@@ -214,16 +214,19 @@ export function OasisSummary({ data: strategyData, loading }) {
     )
 }
 
-// 6. BigWhaleMonitor
+// 218: 6. BigWhaleMonitor
 export function BigWhaleMonitor() {
     const { t, lang } = useLanguage()
     const [txs, setTxs] = useState([])
 
     useEffect(() => {
         const mockTxs = [
-            { id: 1, type: 'BUY', amount: '142.5 BTC', time: '12:04', price: '98,421' },
-            { id: 2, type: 'SELL', amount: '89.2 BTC', time: '12:05', price: '98,390' },
-            { id: 3, type: 'BUY', amount: '210.1 BTC', time: '12:05', price: '98,405' },
+            { id: 1, type: 'BUY', amount: '24.5 BTC', time: '12:04', price: '98,421' }, // Whale
+            { id: 2, type: 'SELL', amount: '2.5 BTC', time: '12:04', price: '98,415' }, // Shrimp
+            { id: 3, type: 'SELL', amount: '6.2 BTC', time: '12:05', price: '98,390' },  // Shark
+            { id: 4, type: 'BUY', amount: '0.8 BTC', time: '12:05', price: '98,400' },  // Shrimp
+            { id: 5, type: 'BUY', amount: '12.1 BTC', time: '12:05', price: '98,405' }, // Whale
+            { id: 6, type: 'BUY', amount: '8.2 BTC', time: '12:06', price: '98,410' },  // Shark
         ];
         setTxs(mockTxs);
     }, [lang])
@@ -235,14 +238,24 @@ export function BigWhaleMonitor() {
                 <span className={`${styles.whaleStatusBadge} ${styles.statusOn}`}>{t('whale.status')}</span>
             </div>
             <div className={styles.whaleList}>
-                {txs.map(tx => (
-                    <div key={tx.id} className={styles.whaleRow}>
-                        <span className={tx.type === 'BUY' ? styles.whaleBuy : styles.whaleSell}>
-                            {tx.type} {tx.amount}
-                        </span>
-                        <span className={styles.whaleTime}>{tx.time}</span>
-                    </div>
-                ))}
+                {txs.map(tx => {
+                    const amountValue = parseFloat(tx.amount);
+                    let emoji = '🦐'; // 1~4 (Shrimp)
+                    if (amountValue >= 10) {
+                        emoji = '🐋'; // 10+ (Whale)
+                    } else if (amountValue >= 5) {
+                        emoji = '🦈'; // 5~9 (Shark)
+                    }
+
+                    return (
+                        <div key={tx.id} className={styles.whaleRow}>
+                            <span className={tx.type === 'BUY' ? styles.whaleBuy : styles.whaleSell}>
+                                {emoji} {tx.type} {tx.amount}
+                            </span>
+                            <span className={styles.whaleTime}>{tx.time}</span>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     )

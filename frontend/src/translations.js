@@ -19,12 +19,12 @@ export const translations = {
             updateTime: '마지막 업데이트',
         },
         sentiment: {
-            title: '🌱 현재 롱 / 숏 비율',
+            title: '현재 롱 / 숏 비율',
             subtitle: '바이낸스 선물 포지션 심리',
             binance: 'Binance Futures',
         },
         fearGreed: {
-            title: '📊 공포 & 탐욕 지수',
+            title: '공포 & 탐욕 지수',
             ExtremeFear: '극도 공포',
             Fear: '공포',
             Neutral: '중립',
@@ -122,12 +122,12 @@ export const translations = {
             updateTime: 'Last update',
         },
         sentiment: {
-            title: '🌱 Long / Short Ratio',
+            title: 'Long / Short Ratio',
             subtitle: 'Binance Futures Sentiment',
             binance: 'Binance Futures',
         },
         fearGreed: {
-            title: '📊 Fear & Greed Index',
+            title: 'CRYPTO FEAR & GREED',
             ExtremeFear: 'Extreme Fear',
             Fear: 'Fear',
             Neutral: 'Neutral',
