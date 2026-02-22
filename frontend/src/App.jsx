@@ -153,7 +153,7 @@ function App() {
 
         <div className="area-sidebar-bottom">
           <ErrorBoundary>
-            <TradePerformance />
+            <SentimentPanel />
           </ErrorBoundary>
           <ErrorBoundary>
             <FearGreed />
@@ -165,7 +165,10 @@ function App() {
 
         <div className="area-report">
           <ErrorBoundary>
-            <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
+              <TradePerformance />
+              <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
+            </div>
           </ErrorBoundary>
         </div>
 
@@ -177,10 +180,7 @@ function App() {
 
         <div className="area-sentiment">
           <ErrorBoundary>
-            <SentimentPanel />
-            <div style={{ marginTop: '12px', flex: 1 }}>
-              <BigWhaleMonitor />
-            </div>
+            <BigWhaleMonitor />
           </ErrorBoundary>
         </div>
 
