@@ -1,8 +1,7 @@
 .widget {
-    background: #0d1117;
-    padding: 14px 16px;
+    background: transparent;
+    padding: 10px;
     height: 100%;
-    border-radius: 12px;
 }
 
 .header {
