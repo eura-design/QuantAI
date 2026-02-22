@@ -52,7 +52,7 @@ function BigWhaleMonitor() {
       height: '100%', display: 'flex', flexDirection: 'column',
       background: 'rgba(13, 17, 23, 0.7)', backdropFilter: 'blur(8px)',
       border: '1px solid rgba(48, 54, 61, 0.6)', borderRadius: '16px',
-      padding: '20px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)', overflow: 'hidden'
+      padding: '20px 20px 30px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)', overflow: 'hidden'
     }}>
       <div style={{
         fontSize: '1rem', fontWeight: '800', color: '#f0f6fc',
