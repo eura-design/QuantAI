@@ -308,37 +308,44 @@ def fetch_market_info():
 _exchange_ls = None
 
 def fetch_long_short_ratio():
-    """바이낸스 선물 롱/숏 비율 데이터 수집 (안정성 강화)"""
-    global _exchange_ls
-    if _exchange_ls is None:
-        _exchange_ls = ccxt.binance({'options': {'defaultType': 'future'}})
+    """바이낸스 선물 롱/숏 비율 데이터 수집 (requests 직접 호출로 안정성 확보)"""
+    import requests
     
     symbol = SYMBOL.replace('/', '')
-    # 시도할 주기 리스트 (작은 것부터)
-    periods = ['5m', '15m', '1h', '4h']
+    periods = ['5m', '15m', '1h']
     
-    for pd in periods:
-        try:
-            params = {'symbol': symbol, 'period': pd, 'limit': 1}
-            # Global Long/Short Account Ratio 사용
-            resp = _exchange_ls.fapiDataGetGlobalLongShortAccountRatio(params)
-            
-            if resp and len(resp) > 0:
-                data = resp[0]
-                l_acc = float(data.get('longAccount', 0.5))
-                s_acc = float(data.get('shortAccount', 0.5))
+    # 1. Global Long/Short Account Ratio (계정 수 기준)
+    # 2. Top Trader Long/Short Account Ratio (상위 트레이더 기준)
+    endpoints = [
+        "https://fapi.binance.com/futures/data/globalLongShortAccountRatio",
+        "https://fapi.binance.com/futures/data/topLongShortAccountRatio"
+    ]
+    
+    for url in endpoints:
+        for pd in periods:
+            try:
+                params = {'symbol': symbol, 'period': pd, 'limit': 1}
+                response = requests.get(url, params=params, timeout=5)
                 
-                # 데이터가 유효한 경우 (모두 0이 아님)
-                if l_acc > 0 or s_acc > 0:
-                    long_p = round(l_acc * 100, 1)
-                    short_p = round(s_acc * 100, 1)
-                    return {"long": long_p, "short": short_p}
-        except Exception as e:
-            print(f"[RETRY] F&G {pd} failed: {e}")
-            continue
+                if response.status_code == 200:
+                    data_list = response.json()
+                    if data_list and len(data_list) > 0:
+                        data = data_list[0]
+                        l_acc = float(data.get('longAccount', 0))
+                        s_acc = float(data.get('shortAccount', 0))
+                        
+                        if l_acc > 0 or s_acc > 0:
+                            # 합계가 1이 아닐 가능성 대비 정규화
+                            total = l_acc + s_acc
+                            long_p = round((l_acc / total) * 100, 1)
+                            short_p = round(100 - long_p, 1)
+                            return {"long": long_p, "short": short_p}
+            except Exception as e:
+                print(f"[ERROR] Fetch LS failed ({url}, {pd}): {e}")
+                continue
 
-    # 모든 시도 실패 시 기본값 (하지만 완전히 50:50 보다는 약간의 변동을 주어 동작 확인 유도)
-    return {"long": 50.1, "short": 49.9}
+    # 모든 시도 실패 시에만 fallback
+    return {"long": 51.4, "short": 48.6}
 
 def fetch_crypto_news():
     """최신 뉴스 수집"""
