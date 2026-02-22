@@ -32,7 +32,7 @@ export function TradePerformance() {
         <div className={styles.container}>
             <div className={styles.header}>
                 <span className={styles.badge}>TRACK RECORD</span>
-                <h3 className={styles.title}>AI 가상 매매 성과</h3>
+                <h3 className={styles.title}>AI 매매 성과</h3>
             </div>
 
             <div className={styles.statsGrid}>

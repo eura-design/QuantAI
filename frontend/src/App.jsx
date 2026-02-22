@@ -113,7 +113,7 @@ function App() {
 
         {/* 2열: 성과 + 리포트 */}
         <div className="area-sidebar-1" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', border: '1px solid #1e2d45', borderRadius: '12px', background: '#0d1117', overflow: 'hidden' }}>
+          <div style={{ height: '180px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <ErrorBoundary>
               <TradePerformance />
             </ErrorBoundary>
@@ -127,7 +127,7 @@ function App() {
 
         {/* 3열: 요약 + 채팅 */}
         <div className="area-sidebar-2" style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ height: '180px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <ErrorBoundary>
               <DailyBriefing />
             </ErrorBoundary>
