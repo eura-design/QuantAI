@@ -145,41 +145,46 @@ function App() {
     <div className="app">
       <Header />
       <div className="main-layout">
-        <ErrorBoundary>
-          <ChartPanel />
-        </ErrorBoundary>
-
-        <div className="sidebar-column">
+        <div className="area-chart">
           <ErrorBoundary>
-            <TradePerformance />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <DailyBriefing />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
-          </ErrorBoundary>
-
-          <ErrorBoundary>
-            <BigWhaleMonitor />
+            <ChartPanel />
           </ErrorBoundary>
         </div>
 
-        <div className="sidebar-column">
+        <div className="area-sidebar-bottom">
           <ErrorBoundary>
-            <SentimentPanel />
+            <TradePerformance />
           </ErrorBoundary>
-
           <ErrorBoundary>
             <FearGreed />
           </ErrorBoundary>
-
           <ErrorBoundary>
             <EventCalendar />
           </ErrorBoundary>
+        </div>
 
+        <div className="area-report">
+          <ErrorBoundary>
+            <ReportPanel data={data} loading={loading} error={error} onRefresh={refetch} />
+          </ErrorBoundary>
+        </div>
+
+        <div className="area-brief">
+          <ErrorBoundary>
+            <DailyBriefing />
+          </ErrorBoundary>
+        </div>
+
+        <div className="area-sentiment">
+          <ErrorBoundary>
+            <SentimentPanel />
+            <div style={{ marginTop: '12px', flex: 1 }}>
+              <BigWhaleMonitor />
+            </div>
+          </ErrorBoundary>
+        </div>
+
+        <div className="area-chat">
           <ErrorBoundary>
             <ChatPanel />
           </ErrorBoundary>

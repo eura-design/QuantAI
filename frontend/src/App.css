@@ -37,16 +37,84 @@ body {
   overflow: hidden;
 }
 
+/* 대시보드 레이아웃 */
 .main-layout {
-  display: flex;
+  display: grid;
   flex: 1;
+  grid-template-columns: 2.5fr 1.2fr 1.1fr;
+  grid-template-rows: auto 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
   overflow: hidden;
   min-height: 0;
+  background: #06090f;
+}
+
+/* 영역별 배치 */
+.area-chart {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.area-report {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  min-height: 0;
+}
+
+.area-brief {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.area-sentiment {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.area-sidebar-bottom {
+  grid-column: 1;
+  grid-row: 3;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.area-chat {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+/* 개별 컴포넌트 래퍼 (높이 조절용) */
+.area-chart>*,
+.area-report>*,
+.area-brief>*,
+.area-sentiment>*,
+.area-sidebar-bottom>*,
+.area-chat>* {
+  height: 100%;
+  width: 100%;
+}
+
+/* 반응형: 노트북/태블릿 */
+@media (max-width: 1400px) {
+  .main-layout {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: auto;
+    overflow-y: auto;
+  }
 }
 
 /* 반응형: 모바일 */
 @media (max-width: 900px) {
   .main-layout {
+    display: flex;
     flex-direction: column;
+    padding: 8px;
+    height: auto;
+    overflow: visible;
   }
 }
