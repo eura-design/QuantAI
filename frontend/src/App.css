@@ -44,9 +44,9 @@ body {
   grid-template-columns: 2.2fr 1fr 1fr;
   grid-template-rows: 2.2fr 1fr;
   gap: 16px;
-  /* 간격도 조금 더 넓힘 */
-  padding: 16px 20px 24px;
-  /* [상, 좌우, 하] 패딩 적용 */
+  padding: 16px 20px 0;
+  margin-bottom: 40px;
+  /* 하단 여백을 마진으로 주어 배경 노출 */
   overflow: hidden;
   min-height: 0;
   background: #06090f;
