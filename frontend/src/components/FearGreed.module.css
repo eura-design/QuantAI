@@ -1,7 +1,11 @@
 .widget {
-    background: transparent;
-    padding: 10px;
+    background: rgba(13, 17, 23, 0.7);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(48, 54, 61, 0.6);
+    border-radius: 16px;
+    padding: 20px;
     height: 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .header {

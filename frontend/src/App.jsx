@@ -50,16 +50,21 @@ function BigWhaleMonitor() {
   return (
     <div style={{
       height: '100%', display: 'flex', flexDirection: 'column',
-      background: '#0d1117', border: '1px solid #1e2d45', borderRadius: '12px', overflow: 'hidden'
+      background: 'rgba(13, 17, 23, 0.7)', backdropFilter: 'blur(8px)',
+      border: '1px solid rgba(48, 54, 61, 0.6)', borderRadius: '16px',
+      padding: '20px', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)', overflow: 'hidden'
     }}>
-      <div style={{ padding: '8px 12px', background: '#131c2e', borderBottom: '1px solid #1e2d45', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{
+        fontSize: '1rem', fontWeight: '800', color: '#f0f6fc',
+        marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px'
+      }}>
         <span>🐋 실시간 고래 감시</span>
-        <span style={{ color: status === 'ON' ? '#26a69a' : '#ef5350' }}>● {status}</span>
+        <span style={{ fontSize: '10px', color: status === 'ON' ? '#26a69a' : '#ef5350', marginLeft: 'auto' }}>● {status}</span>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '10px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
         {msgs.length === 0 ? <div style={{ color: '#475569', textAlign: 'center', fontSize: '11px', marginTop: '20px' }}>데이터 대기 중...</div> :
           msgs.map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
               <span style={{ color: m.side === 'BUY' ? '#26a69a' : '#ef5350', fontSize: '12px', fontWeight: 'bold' }}>{m.side} ${(m.amount / 1000).toFixed(0)}K</span>
               <span style={{ color: '#445566', fontSize: '10px' }}>{m.timestamp}</span>
             </div>
